@@ -1,0 +1,34 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["hkg1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    },
+    "app/api/cron/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/bilibili",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/jianshu",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/douban",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/youtube",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}
+

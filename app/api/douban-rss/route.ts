@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { parseStringPromise } from 'xml2js'
 
 export async function GET() {
-  // 尝试多个可能的JSON文件路径
+  // 首先尝试读取本地JSON文件
   const possiblePaths = [
     path.join(process.cwd(), 'douban_rss_data.json'),
     path.join(process.cwd(), 'douban-rss-fetcher', 'douban_rss_data.json'),
@@ -22,10 +23,77 @@ export async function GET() {
     }
   }
   
-  // 如果所有文件都不存在，返回错误
+  // 如果本地文件不存在，尝试直接从豆瓣 RSS 获取
+  try {
+    const userId = '284853052'
+    const rssUrl = `https://www.douban.com/feed/people/${userId}/interests`
+    
+    const response = await fetch(rssUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8'
+      },
+      next: { revalidate: 1800 } // 缓存30分钟
+    })
+
+    if (response.ok) {
+      const xmlText = await response.text()
+      const parsed = await parseStringPromise(xmlText)
+      
+      const channel = parsed.rss?.channel?.[0]
+      if (channel) {
+        const items = channel.item || []
+        const interests = items.map((item: any) => {
+          const title = item.title?.[0] || ''
+          const link = item.link?.[0] || ''
+          const pubDate = item.pubDate?.[0] || new Date().toISOString()
+          const description = item.description?.[0] || ''
+          
+          let type = 'interest'
+          let rating = ''
+          const typeMatch = description.match(/类型[：:]\s*([^<]+)/)
+          const ratingMatch = description.match(/评分[：:]\s*([^<]+)/)
+          
+          if (typeMatch) {
+            type = typeMatch[1].trim()
+          }
+          if (ratingMatch) {
+            rating = ratingMatch[1].trim()
+          }
+
+          return {
+            title,
+            url: link,
+            type,
+            rating,
+            description,
+            published_at: pubDate,
+            created_at: pubDate
+          }
+        })
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            interests,
+            total: interests.length,
+            user: {
+              id: userId,
+              name: channel.title?.[0] || 'Saai'
+            }
+          }
+        })
+      }
+    }
+  } catch (error) {
+    console.error('豆瓣RSS获取失败:', error)
+  }
+  
+  // 如果所有方法都失败，返回错误
   return NextResponse.json({ 
     success: false, 
-    error: '豆瓣RSS数据文件不存在，请先运行Python抓取脚本',
-    details: '请运行: cd douban-rss-fetcher && python3 fetch_douban_rss.py'
-  })
+    error: '豆瓣RSS数据获取失败',
+    details: '请检查网络连接或稍后重试'
+  }, { status: 500 })
 } 

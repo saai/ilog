@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+*.log
+.env.local
+.env*.local
+bilibili-spider
+douban-spider
+jianshu-spider
+youtube-spider
+douban-rss-fetcher
+*.sh
+crontab_example.txt
+
