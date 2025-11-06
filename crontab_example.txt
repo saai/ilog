@@ -6,20 +6,20 @@
 # 3. 保存并退出
 
 # 每天凌晨2点更新所有平台数据
-0 2 * * * cd /Users/yansha/Documents/iLog && ./update_data.sh >> /Users/yansha/Documents/iLog/cron.log 2>&1
+0 2 * * * cd /Users/yansha/Documents/ilog && ./update_data.sh >> /Users/yansha/Documents/ilog/cron.log 2>&1
 
 # 或者分别设置不同时间更新不同平台
 # 每天凌晨1点更新简书数据
-# 0 1 * * * cd /Users/yansha/Documents/iLog/jianshu-spider && ./run.sh >> /Users/yansha/Documents/iLog/cron.log 2>&1
+# 0 1 * * * cd /Users/yansha/Documents/ilog/jianshu-spider && ./run.sh >> /Users/yansha/Documents/ilog/cron.log 2>&1
 
 # 每天凌晨1点30分更新B站数据
-# 30 1 * * * cd /Users/yansha/Documents/iLog/bilibili-spider && ./run.sh >> /Users/yansha/Documents/iLog/cron.log 2>&1
+# 30 1 * * * cd /Users/yansha/Documents/ilog/bilibili-spider && ./run.sh >> /Users/yansha/Documents/ilog/cron.log 2>&1
 
 # 每天凌晨2点更新豆瓣数据
-# 0 2 * * * cd /Users/yansha/Documents/iLog/douban-spider && ./run.sh >> /Users/yansha/Documents/iLog/cron.log 2>&1
+# 0 2 * * * cd /Users/yansha/Documents/ilog/douban-spider && ./run.sh >> /Users/yansha/Documents/ilog/cron.log 2>&1
 
 # 查看定时任务列表
 # crontab -l
 
 # 查看日志
-# tail -f /Users/yansha/Documents/iLog/cron.log 
+# tail -f /Users/yansha/Documents/ilog/cron.log 
