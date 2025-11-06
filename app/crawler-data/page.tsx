@@ -184,7 +184,7 @@ export default async function CrawlerDataPage() {
                   <p className="text-gray-600">通过RSS订阅获取的最新收藏</p>
                 </div>
               </div>
-              {doubanRSSResult.success && (
+              {doubanRSSResult.success && doubanRSSResult.data && (
                 <div className="text-right">
                   <div className="text-sm text-gray-500">共 {doubanRSSResult.data.total} 条</div>
                   <div className="text-xs text-gray-400">
@@ -200,7 +200,7 @@ export default async function CrawlerDataPage() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">豆瓣RSS数据获取失败</h3>
                 <p className="text-gray-600">{doubanRSSResult.error}</p>
               </div>
-            ) : (
+            ) : doubanRSSResult.data ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {doubanRSSResult.data.collections.slice(0, 9).map((item: DoubanRSSItem, index: number) => (
                   <a
@@ -230,9 +230,9 @@ export default async function CrawlerDataPage() {
                   </a>
                 ))}
               </div>
-            )}
+            ) : null}
 
-            {doubanRSSResult.success && doubanRSSResult.data.collections.length > 9 && (
+            {doubanRSSResult.success && doubanRSSResult.data && doubanRSSResult.data.collections.length > 9 && (
               <div className="mt-6 text-center">
                 <button className="text-primary-600 hover:text-primary-700 font-medium">
                   查看更多 ({doubanRSSResult.data.collections.length - 9} 条)
@@ -255,7 +255,7 @@ export default async function CrawlerDataPage() {
                   <p className="text-gray-600">最新发布的文章内容</p>
                 </div>
               </div>
-              {jianshuResult.success && (
+              {jianshuResult.success && jianshuResult.data && (
                 <div className="text-right">
                   <div className="text-sm text-gray-500">共 {jianshuResult.data.total_articles} 篇</div>
                   <div className="text-xs text-gray-400">
@@ -271,7 +271,7 @@ export default async function CrawlerDataPage() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">简书数据获取失败</h3>
                 <p className="text-gray-600">{jianshuResult.error}</p>
               </div>
-            ) : (
+            ) : jianshuResult.data ? (
               <div className="space-y-4">
                 {jianshuResult.data.articles
                   .filter((article: JianshuArticle) => article.title !== "0" && !article.link.includes("#comments"))
@@ -306,7 +306,7 @@ export default async function CrawlerDataPage() {
                   </a>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -323,7 +323,7 @@ export default async function CrawlerDataPage() {
                   <p className="text-gray-600">最新发布的视频内容</p>
                 </div>
               </div>
-              {bilibiliResult.success && (
+              {bilibiliResult.success && bilibiliResult.data && (
                 <div className="text-right">
                   <div className="text-sm text-gray-500">共 {bilibiliResult.data.total_videos} 个</div>
                   <div className="text-xs text-gray-400">
@@ -339,13 +339,13 @@ export default async function CrawlerDataPage() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">B站数据获取失败</h3>
                 <p className="text-gray-600">{bilibiliResult.error}</p>
               </div>
-            ) : bilibiliResult.data.videos.length === 0 ? (
+            ) : bilibiliResult.data && bilibiliResult.data.videos.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 text-4xl mb-4">📱</div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">暂无B站视频</h3>
                 <p className="text-gray-600">暂时没有找到最新的视频内容</p>
               </div>
-            ) : (
+            ) : bilibiliResult.data ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {bilibiliResult.data.videos.map((video: BilibiliVideo, index: number) => (
                   <a
@@ -392,7 +392,7 @@ export default async function CrawlerDataPage() {
                   </a>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -467,25 +467,25 @@ export default async function CrawlerDataPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">
-                  {doubanRSSResult.success ? doubanRSSResult.data.total : 0}
+                  {doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data.total : 0}
                 </div>
                 <div className="text-sm opacity-90">豆瓣RSS收藏</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">
-                  {jianshuResult.success ? jianshuResult.data.total_articles : 0}
+                  {jianshuResult.success && jianshuResult.data ? jianshuResult.data.total_articles : 0}
                 </div>
                 <div className="text-sm opacity-90">简书文章</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">
-                  {bilibiliResult.success ? bilibiliResult.data.total_videos : 0}
+                  {bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data.total_videos : 0}
                 </div>
                 <div className="text-sm opacity-90">B站视频</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold mb-2">
-                  {doubanResult.success ? doubanResult.data.collections?.length || 0 : 0}
+                  {doubanResult.success && doubanResult.data ? (doubanResult.data.collections?.length || 0) : 0}
                 </div>
                 <div className="text-sm opacity-90">豆瓣收藏</div>
               </div>

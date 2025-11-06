@@ -1,0 +1,32 @@
+name: Post Deploy - Initialize Crawlers
+
+on:
+  repository_dispatch:
+    types: [vercel]
+  workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: 'Vercel deployment URL'
+        required: false
+
+jobs:
+  init-crawlers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment
+        run: sleep 10
+
+      - name: Initialize crawlers
+        env:
+          DEPLOYMENT_URL: ${{ github.event.client_payload.url || inputs.deployment_url || 'https://ilog.vercel.app' }}
+          INIT_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "🚀 Initializing crawlers on $DEPLOYMENT_URL"
+          
+          if [ -z "$INIT_SECRET" ]; then
+            curl -X GET "$DEPLOYMENT_URL/api/init"
+          else
+            curl -X GET "$DEPLOYMENT_URL/api/init" \
+              -H "Authorization: Bearer $INIT_SECRET"
+          fi
+

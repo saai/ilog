@@ -246,11 +246,11 @@ export default async function TimelinePage() {
 
   // 合并并排序数据
   const timelineItems = mergeAndSortData(
-    doubanRSSResult.success ? doubanRSSResult.data : null,
-    doubanResult.success ? doubanResult.data : null,
-    bilibiliResult.success ? bilibiliResult.data : null,
-    jianshuResult.success ? jianshuResult.data : null,
-    youtubeResult.success ? youtubeResult.data : null
+    doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null,
+    doubanResult.success && doubanResult.data ? doubanResult.data : null,
+    bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null,
+    jianshuResult.success && jianshuResult.data ? jianshuResult.data : null,
+    youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
   )
 
   // 按日期分组

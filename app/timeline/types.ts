@@ -43,6 +43,11 @@ export interface TimelineItem {
     coverUrl?: string // 封面图URL
     slug?: string // 文章slug
     userId?: string // 用户ID
+    
+    // YouTube 特定字段
+    videoId?: string // YouTube 视频ID
+    channelName?: string // YouTube 频道名称
+    thumbnailUrl?: string // YouTube 缩略图URL
   }
   
   // 数据来源信息（用于调试和追踪）

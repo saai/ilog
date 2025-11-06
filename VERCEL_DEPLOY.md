@@ -78,9 +78,23 @@
 
 ### 初始化爬虫（部署后运行一次）
 
-项目已配置为在部署后手动运行一次爬虫，而不是定时任务。
+项目已配置为在部署后运行一次爬虫，而不是定时任务。
 
-部署完成后，调用 `/api/init` API 来运行所有爬虫：
+#### 自动初始化（推荐）
+
+配置 Vercel Deployment Hooks 来自动运行：
+
+1. 在 Vercel Dashboard → Settings → Git → Deployment Hooks
+2. 创建新的 Hook：
+   - **Hook URL**: `https://your-domain.vercel.app/api/init`
+   - **Events**: 选择 `Production Deployment`
+   - **Headers**: 如果设置了 `CRON_SECRET`，添加 `Authorization: Bearer ${CRON_SECRET}`
+
+详细配置说明请查看 [VERCEL_AUTO_INIT.md](./VERCEL_AUTO_INIT.md)
+
+#### 手动初始化
+
+部署完成后，手动调用 `/api/init` API：
 
 ```bash
 curl https://your-domain.vercel.app/api/init
