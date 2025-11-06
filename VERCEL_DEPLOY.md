@@ -76,20 +76,30 @@
 - ✅ 完全兼容 Vercel Serverless Functions
 - ✅ 支持自动定时运行（通过 Vercel Cron Jobs）
 
-### Vercel Cron Jobs 配置
+### 初始化爬虫（部署后运行一次）
 
-项目已配置自动定时任务，每 6 小时运行一次爬虫：
+项目已配置为在部署后手动运行一次爬虫，而不是定时任务。
 
-- **B站**: 每 6 小时更新一次
-- **简书**: 每 6 小时更新一次
-- **豆瓣**: 每 6 小时更新一次
-- **YouTube**: 每 6 小时更新一次
+部署完成后，调用 `/api/init` API 来运行所有爬虫：
 
-Cron Jobs 配置在 `vercel.json` 中，部署后会自动生效。
+```bash
+curl https://your-domain.vercel.app/api/init
+```
 
-### 手动触发爬虫
+这会依次运行所有爬虫并返回结果。如果需要更新数据，可以随时手动调用这个 API。
 
-你也可以手动调用这些 API：
+### 初始化爬虫（推荐）
+
+部署后运行一次所有爬虫：
+
+```bash
+# 运行所有爬虫
+curl https://your-domain.vercel.app/api/init
+```
+
+### 单独运行某个爬虫
+
+如果需要单独运行某个爬虫：
 
 ```bash
 # B站
@@ -112,9 +122,9 @@ curl https://your-domain.vercel.app/api/cron/youtube
 ## 📁 项目文件说明
 
 - `vercel.json`: Vercel 配置文件
-  - 设置 API 路由最大执行时间为 30 秒
+  - 设置 API 路由最大执行时间
   - 配置构建和安装命令
-  - 配置 Cron Jobs 定时任务（每 6 小时运行一次）
+  - 已移除定时任务，改为手动触发
   
 - `.vercelignore`: 忽略不需要部署的文件
   - 排除 Python 爬虫脚本、本地数据文件等
@@ -172,8 +182,8 @@ curl https://your-domain.vercel.app/api/cron/youtube
 ## 📝 后续优化建议
 
 1. **数据更新策略** ✅ 已实现
-   - ✅ Vercel Cron Jobs 已配置，每 6 小时自动更新数据
-   - 如需调整更新频率，修改 `vercel.json` 中的 `crons` 配置
+   - ✅ 部署后手动调用 `/api/init` 运行一次爬虫
+   - ✅ 需要更新数据时，可以随时手动调用初始化 API
 
 2. **性能优化**
    - 启用 Vercel Edge Functions（如果适用）

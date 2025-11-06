@@ -40,36 +40,65 @@
   ```
 - 如果不设置 `CRON_SECRET`，API 可以直接访问（不推荐生产环境）
 
-## ⏰ 自动定时任务
+## 🚀 初始化爬虫（项目启动时运行一次）
 
-Vercel Cron Jobs 已配置，每 6 小时自动运行一次所有爬虫：
+项目已配置为在部署后手动运行一次爬虫，而不是定时任务。
 
+### 使用初始化 API
+
+部署后，调用 `/api/init` 来运行所有爬虫：
+
+```bash
+# 运行所有爬虫（一次性）
+curl https://your-domain.vercel.app/api/init
+```
+
+### 带认证的调用
+
+```bash
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  https://your-domain.vercel.app/api/init
+```
+
+初始化 API 会依次运行所有爬虫：
+- B站视频数据抓取
+- 简书文章数据抓取
+- 豆瓣 RSS 数据抓取
+- YouTube 视频数据抓取
+
+返回结果示例：
 ```json
 {
-  "crons": [
-    {
-      "path": "/api/cron/bilibili",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/jianshu",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/douban",
-      "schedule": "0 */6 * * *"
-    },
-    {
-      "path": "/api/cron/youtube",
-      "schedule": "0 */6 * * *"
-    }
-  ]
+  "success": true,
+  "message": "完成 4/4 个爬虫",
+  "results": [
+    { "name": "bilibili", "success": true, "status": 200, "message": "成功" },
+    { "name": "jianshu", "success": true, "status": 200, "message": "成功" },
+    { "name": "douban", "success": true, "status": 200, "message": "成功" },
+    { "name": "youtube", "success": true, "status": 200, "message": "成功" }
+  ],
+  "timestamp": "2024-01-01T00:00:00.000Z"
 }
 ```
 
 ## 📝 使用示例
 
-### 手动调用 API
+### 方法 1：使用初始化 API（推荐）
+
+部署后运行一次所有爬虫：
+
+```bash
+# 运行所有爬虫
+curl https://your-domain.vercel.app/api/init
+
+# 带认证
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  https://your-domain.vercel.app/api/init
+```
+
+### 方法 2：单独调用各个爬虫 API
+
+如果需要单独运行某个爬虫：
 
 ```bash
 # B站
