@@ -12,17 +12,27 @@ export async function GET() {
     const data = JSON.parse(fileContent)
     
     console.log('成功读取本地B站视频数据')
+    console.log(`数据获取时间: ${data.fetched_at}`)
+    console.log(`视频数量: ${data.videos?.length || 0}`)
     
     // 转换数据格式以匹配现有接口
-    const videos = data.videos.map((video: any) => ({
-      title: video.title,
-      url: video.url,
-      publish_time: video.publish_time,
-      play_count: video.play_count,
-      cover_url: video.cover_url,
-      published: video.fetched_at,
-      formattedDate: formatDate(video.fetched_at)
-    }))
+    const videos = data.videos
+      .map((video: any) => ({
+        title: video.title,
+        url: video.url,
+        publish_time: video.publish_time,
+        published_at: video.published_at || video.fetched_at,
+        play_count: video.play_count,
+        cover_url: video.cover_url,
+        published: video.published_at || video.fetched_at,
+        formattedDate: formatDate(video.published_at || video.fetched_at)
+      }))
+      // 按发布时间倒序排序（最新的在前）
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.published_at || a.published).getTime()
+        const dateB = new Date(b.published_at || b.published).getTime()
+        return dateB - dateA
+      })
     
     return NextResponse.json({
       success: true,
@@ -56,15 +66,26 @@ export async function GET() {
       const data = await response.json()
       
       if (data.code === 0 && data.data?.list?.vlist) {
-        const videos = data.data.list.vlist.map((video: any) => ({
-          title: video.title,
-          url: `https://www.bilibili.com/video/${video.bvid}`,
-          publish_time: video.created,
-          play_count: video.play,
-          cover_url: video.pic,
-          published: new Date(video.created * 1000).toISOString(),
-          formattedDate: formatDate(new Date(video.created * 1000).toISOString())
-        }))
+        const videos = data.data.list.vlist
+          .map((video: any) => {
+            const publishedAt = new Date(video.created * 1000).toISOString()
+            return {
+              title: video.title,
+              url: `https://www.bilibili.com/video/${video.bvid}`,
+              publish_time: video.created,
+              published_at: publishedAt,
+              play_count: video.play,
+              cover_url: video.pic,
+              published: publishedAt,
+              formattedDate: formatDate(publishedAt)
+            }
+          })
+          // 按发布时间倒序排序（最新的在前）
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.published_at || a.published).getTime()
+            const dateB = new Date(b.published_at || b.published).getTime()
+            return dateB - dateA
+          })
 
         return NextResponse.json({
           success: true,

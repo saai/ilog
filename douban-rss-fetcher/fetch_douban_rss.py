@@ -4,7 +4,7 @@
 import requests
 import json
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import sys
 
@@ -73,8 +73,40 @@ class DoubanRSSFetcher:
             if not date_string:
                 return '未知时间'
             
-            # 解析RSS日期格式 (RFC 822)
-            date_obj = datetime.strptime(date_string, '%a, %d %b %Y %H:%M:%S %Z')
+            # 尝试多种日期格式
+            date_obj = None
+            date_formats = [
+                '%a, %d %b %Y %H:%M:%S %Z',  # RFC 822格式: "Fri, 04 Jul 2025 16:44:07 GMT"
+                '%a, %d %b %Y %H:%M:%S %z',  # 带时区偏移: "Fri, 04 Jul 2025 16:44:07 +0800"
+                '%a, %d %b %Y %H:%M:%S',     # 无时区: "Fri, 04 Jul 2025 16:44:07"
+                '%Y-%m-%dT%H:%M:%S',         # ISO格式: "2025-11-10T17:50:53"
+                '%Y-%m-%dT%H:%M:%S.%f',      # ISO格式带微秒: "2025-11-10T17:50:53.987738"
+                '%Y-%m-%d %H:%M:%S',         # 标准格式: "2025-11-10 17:50:53"
+            ]
+            
+            for fmt in date_formats:
+                try:
+                    date_obj = datetime.strptime(date_string, fmt)
+                    break
+                except:
+                    continue
+            
+            # 如果所有格式都失败，尝试使用dateutil或直接解析
+            if date_obj is None:
+                try:
+                    # 尝试使用Python的dateutil库（如果可用）
+                    from dateutil import parser
+                    date_obj = parser.parse(date_string)
+                except:
+                    # 最后尝试直接解析
+                    try:
+                        date_obj = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+                    except:
+                        pass
+            
+            if date_obj is None:
+                return '未知时间'
+            
             now = datetime.now()
             diff = now - date_obj
             
@@ -122,7 +154,9 @@ class DoubanRSSFetcher:
             return False
 
     def get_mock_data(self):
-        """返回模拟数据"""
+        """返回模拟数据（使用合理的发布时间，而不是当前时间）"""
+        # 使用过去的时间作为模拟数据的发布时间
+        now = datetime.now()
         return [
             {
                 'title': '最近在读禅与摩托车维修艺术',
@@ -130,8 +164,9 @@ class DoubanRSSFetcher:
                 'type': 'interest',
                 'rating': '',
                 'author': '',
-                'published': datetime.now().isoformat(),
-                'formattedDate': '今天',
+                # 使用RFC 822格式的日期字符串（模拟RSS格式）
+                'published': (now - timedelta(days=2)).strftime('%a, %d %b %Y %H:%M:%S GMT'),
+                'formattedDate': '2天前',
                 'description': '正在阅读的书籍'
             },
             {
@@ -140,8 +175,9 @@ class DoubanRSSFetcher:
                 'type': 'interest',
                 'rating': '',
                 'author': '',
-                'published': datetime.now().isoformat(),
-                'formattedDate': '今天',
+                # 使用RFC 822格式的日期字符串（模拟RSS格式）
+                'published': (now - timedelta(days=5)).strftime('%a, %d %b %Y %H:%M:%S GMT'),
+                'formattedDate': '5天前',
                 'description': '想看的电影'
             }
         ]

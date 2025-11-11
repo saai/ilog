@@ -12,8 +12,8 @@ fi
 echo "📦 安装Python依赖..."
 pip3 install -r requirements.txt
 
-# 运行爬虫
-echo "🕷️ 开始爬取B站视频数据..."
-python3 fetch_bilibili.py
+# 运行爬虫（默认使用用户空间主页）
+echo "🕷️ 开始爬取B站视频数据（从用户空间主页）..."
+python3 fetch_bilibili.py --space
 
 echo "✅ B站爬虫运行完成！" 

@@ -44,34 +44,42 @@ export async function GET() {
       const channel = parsed.rss?.channel?.[0]
       if (channel) {
         const items = channel.item || []
-        const interests = items.map((item: any) => {
-          const title = item.title?.[0] || ''
-          const link = item.link?.[0] || ''
-          const pubDate = item.pubDate?.[0] || new Date().toISOString()
-          const description = item.description?.[0] || ''
-          
-          let type = 'interest'
-          let rating = ''
-          const typeMatch = description.match(/类型[：:]\s*([^<]+)/)
-          const ratingMatch = description.match(/评分[：:]\s*([^<]+)/)
-          
-          if (typeMatch) {
-            type = typeMatch[1].trim()
-          }
-          if (ratingMatch) {
-            rating = ratingMatch[1].trim()
-          }
+        const interests = items
+          .map((item: any) => {
+            const title = item.title?.[0] || ''
+            const link = item.link?.[0] || ''
+            const pubDate = item.pubDate?.[0] || new Date().toISOString()
+            const description = item.description?.[0] || ''
+            
+            let type = 'interest'
+            let rating = ''
+            const typeMatch = description.match(/类型[：:]\s*([^<]+)/)
+            const ratingMatch = description.match(/评分[：:]\s*([^<]+)/)
+            
+            if (typeMatch) {
+              type = typeMatch[1].trim()
+            }
+            if (ratingMatch) {
+              rating = ratingMatch[1].trim()
+            }
 
-          return {
-            title,
-            url: link,
-            type,
-            rating,
-            description,
-            published_at: pubDate,
-            created_at: pubDate
-          }
-        })
+            return {
+              title,
+              url: link,
+              type,
+              rating,
+              description,
+              published_at: pubDate,
+              published: pubDate,
+              created_at: pubDate
+            }
+          })
+          // 按发布时间倒序排序（最新的在前）
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.published_at || a.published || a.created_at).getTime()
+            const dateB = new Date(b.published_at || b.published || b.created_at).getTime()
+            return dateB - dateA
+          })
 
         return NextResponse.json({
           success: true,

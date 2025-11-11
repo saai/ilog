@@ -23,7 +23,6 @@ iLog/
 ├── components/             # React 组件
 ├── jianshu-spider/        # 简书爬虫项目
 ├── bilibili-spider/       # B站爬虫项目
-├── douban-spider/         # 豆瓣爬虫项目
 ├── douban-rss-fetcher/    # 豆瓣RSS抓取器
 └── update_data.sh         # 数据更新脚本
 ```
@@ -68,15 +67,11 @@ chmod +x run.sh
 ./run.sh
 ```
 
-### 豆瓣爬虫 (douban-spider)
+### 豆瓣RSS抓取器 (douban-rss-fetcher)
 
-获取豆瓣用户的最新收藏（书籍、电影等）。
+通过豆瓣RSS获取用户的最新收藏（书籍、电影等）。
 
-```bash
-cd douban-spider
-chmod +x run.sh
-./run.sh
-```
+**注意**: 豆瓣RSS抓取器已集成到 `update_data.sh` 脚本中，无需单独执行。运行 `./update_data.sh` 时会自动调用。
 
 ## 📅 数据更新
 
@@ -109,7 +104,7 @@ crontab -e
 
 - **简书**: `jianshu-spider/fetch_jianshu.py` 中的 `user_id`
 - **B站**: `bilibili-spider/fetch_bilibili.py` 中的 `user_id`
-- **豆瓣**: `douban-spider/fetch_douban.py` 中的 `user_id`
+- **豆瓣**: `douban-rss-fetcher/fetch_douban_rss.py` 中的 `user_id`
 
 ### API路由配置
 
@@ -117,7 +112,7 @@ API路由会自动读取本地JSON文件，如果文件不存在则尝试在线A
 
 - `/api/jianshu-articles` - 读取 `jianshu-spider/jianshu_articles.json`
 - `/api/bilibili-videos` - 读取 `bilibili-spider/bilibili_videos.json`
-- `/api/douban-rss` - 读取 `douban-spider/douban_collections.json`
+- `/api/douban-rss` - 读取 `douban-rss-fetcher/douban_rss_data.json` 或 `douban_rss_data.json`
 
 ## 🛠️ 技术栈
 

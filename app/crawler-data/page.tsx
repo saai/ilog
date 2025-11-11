@@ -93,17 +93,9 @@ async function getDoubanRSSData() {
 }
 
 async function getDoubanData() {
-  try {
-    const jsonPath = path.join(process.cwd(), 'douban-spider', 'douban_collections.json')
-    if (!fs.existsSync(jsonPath)) {
-      return { success: false, error: '豆瓣数据文件不存在' }
-    }
-    const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-    const data = JSON.parse(jsonData)
-    return { success: true, data }
-  } catch (error) {
-    return { success: false, error: '读取豆瓣数据失败' }
-  }
+  // 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
+  // 收藏数据现在通过豆瓣RSS获取（见 getDoubanRSSData）
+  return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
 }
 
 async function getBilibiliData() {

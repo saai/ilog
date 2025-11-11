@@ -14,17 +14,24 @@ export async function GET() {
     console.log('成功读取本地YouTube视频数据')
     
     // 转换数据格式以匹配现有接口
-    const videos = data.videos.map((video: any) => ({
-      title: video.title,
-      url: video.url,
-      video_id: video.video_id,
-      published_at: video.published_at,
-      description: video.description,
-      thumbnail_url: video.thumbnail_url,
-      channel_name: video.channel_name,
-      published: video.published_at,
-      formattedDate: formatDate(video.published_at)
-    }))
+    const videos = data.videos
+      .map((video: any) => ({
+        title: video.title,
+        url: video.url,
+        video_id: video.video_id,
+        published_at: video.published_at,
+        description: video.description,
+        thumbnail_url: video.thumbnail_url,
+        channel_name: video.channel_name,
+        published: video.published_at,
+        formattedDate: formatDate(video.published_at)
+      }))
+      // 按发布时间倒序排序（最新的在前）
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.published_at || a.published).getTime()
+        const dateB = new Date(b.published_at || b.published).getTime()
+        return dateB - dateA
+      })
     
     return NextResponse.json({
       success: true,
@@ -61,23 +68,31 @@ export async function GET() {
       const publishedDates = xmlText.match(/<published>([^<]+)<\/published>/g) || []
       
       if (videoIds.length > 0) {
-        const videos = videoIds.slice(0, 10).map((_, index) => {
-          const videoId = videoIds[index]?.replace(/<\/?yt:videoId>/g, '') || ''
-          const title = titles[index + 1]?.replace(/<\/?title>/g, '') || '无标题' // +1 因为第一个title是频道名
-          const published = publishedDates[index]?.replace(/<\/?published>/g, '') || new Date().toISOString()
-          
-          return {
-            title,
-            url: `https://www.youtube.com/watch?v=${videoId}`,
-            video_id: videoId,
-            published_at: published,
-            description: '',
-            thumbnail_url: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-            channel_name: channelHandle,
-            published,
-            formattedDate: formatDate(published)
-          }
-        })
+        const videos = videoIds
+          .slice(0, 10)
+          .map((_, index) => {
+            const videoId = videoIds[index]?.replace(/<\/?yt:videoId>/g, '') || ''
+            const title = titles[index + 1]?.replace(/<\/?title>/g, '') || '无标题' // +1 因为第一个title是频道名
+            const published = publishedDates[index]?.replace(/<\/?published>/g, '') || new Date().toISOString()
+            
+            return {
+              title,
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              video_id: videoId,
+              published_at: published,
+              description: '',
+              thumbnail_url: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+              channel_name: channelHandle,
+              published,
+              formattedDate: formatDate(published)
+            }
+          })
+          // 按发布时间倒序排序（最新的在前）
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.published_at || a.published).getTime()
+            const dateB = new Date(b.published_at || b.published).getTime()
+            return dateB - dateA
+          })
 
         return NextResponse.json({
           success: true,

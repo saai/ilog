@@ -19,7 +19,6 @@ iLog/
 ├── components/                   # React 组件
 ├── jianshu-spider/              # 简书爬虫
 ├── bilibili-spider/             # B站爬虫
-├── douban-spider/               # 豆瓣爬虫
 ├── douban-rss-fetcher/          # 豆瓣RSS抓取器
 ├── update_data.sh               # 数据更新脚本
 ├── crontab_example.txt          # 定时任务示例

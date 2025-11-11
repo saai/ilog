@@ -14,19 +14,27 @@ export async function GET() {
     console.log('成功读取本地简书文章数据')
     
     // 转换数据格式以匹配现有接口
-    const articles = data.articles.map((article: any) => ({
-      title: article.title,
-      link: article.link,
-      slug: article.slug,
-      content: '',
-      contentSnippet: '',
-      published: article.fetched_at,
-      formattedDate: formatDate(article.fetched_at),
-      author: 'Saai',
-      views: 0,
-      likes: 0,
-      comments: 0
-    }))
+    const articles = data.articles
+      .map((article: any) => ({
+        title: article.title,
+        link: article.link,
+        slug: article.slug,
+        published_at: article.published_at || article.fetched_at,
+        content: '',
+        contentSnippet: '',
+        published: article.published_at || article.fetched_at,
+        formattedDate: formatDate(article.published_at || article.fetched_at),
+        author: 'Saai',
+        views: 0,
+        likes: 0,
+        comments: 0
+      }))
+      // 按发布时间倒序排序（最新的在前）
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.published_at || a.published).getTime()
+        const dateB = new Date(b.published_at || b.published).getTime()
+        return dateB - dateA
+      })
     
     return NextResponse.json({
       success: true,
@@ -77,19 +85,30 @@ export async function GET() {
 
         if (data.entries && Array.isArray(data.entries)) {
           // 处理文章数据
-          const articles = data.entries.map((article: any) => ({
-            title: article.title || '无标题',
-            slug: article.slug || '',
-            link: `https://www.jianshu.com/p/${article.slug}`,
-            content: article.content || '',
-            contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
-            published: article.published_at || article.created_at || new Date().toISOString(),
-            formattedDate: formatDate(article.published_at || article.created_at),
-            author: article.user?.nickname || '未知作者',
-            views: article.views_count || 0,
-            likes: article.likes_count || 0,
-            comments: article.comments_count || 0
-          }))
+          const articles = data.entries
+            .map((article: any) => {
+              const publishedAt = article.published_at || article.created_at || new Date().toISOString()
+              return {
+                title: article.title || '无标题',
+                slug: article.slug || '',
+                link: `https://www.jianshu.com/p/${article.slug}`,
+                published_at: publishedAt,
+                content: article.content || '',
+                contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
+                published: publishedAt,
+                formattedDate: formatDate(publishedAt),
+                author: article.user?.nickname || '未知作者',
+                views: article.views_count || 0,
+                likes: article.likes_count || 0,
+                comments: article.comments_count || 0
+              }
+            })
+            // 按发布时间倒序排序（最新的在前）
+            .sort((a: any, b: any) => {
+              const dateA = new Date(a.published_at || a.published).getTime()
+              const dateB = new Date(b.published_at || b.published).getTime()
+              return dateB - dateA
+            })
 
           return NextResponse.json({
             success: true,
@@ -104,19 +123,30 @@ export async function GET() {
           })
         } else if (data.notes && Array.isArray(data.notes)) {
           // 处理不同的数据格式
-          const articles = data.notes.map((article: any) => ({
-            title: article.title || '无标题',
-            slug: article.slug || '',
-            link: `https://www.jianshu.com/p/${article.slug}`,
-            content: article.content || '',
-            contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
-            published: article.published_at || article.created_at || new Date().toISOString(),
-            formattedDate: formatDate(article.published_at || article.created_at),
-            author: article.user?.nickname || '未知作者',
-            views: article.views_count || 0,
-            likes: article.likes_count || 0,
-            comments: article.comments_count || 0
-          }))
+          const articles = data.notes
+            .map((article: any) => {
+              const publishedAt = article.published_at || article.created_at || new Date().toISOString()
+              return {
+                title: article.title || '无标题',
+                slug: article.slug || '',
+                link: `https://www.jianshu.com/p/${article.slug}`,
+                published_at: publishedAt,
+                content: article.content || '',
+                contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
+                published: publishedAt,
+                formattedDate: formatDate(publishedAt),
+                author: article.user?.nickname || '未知作者',
+                views: article.views_count || 0,
+                likes: article.likes_count || 0,
+                comments: article.comments_count || 0
+              }
+            })
+            // 按发布时间倒序排序（最新的在前）
+            .sort((a: any, b: any) => {
+              const dateA = new Date(a.published_at || a.published).getTime()
+              const dateB = new Date(b.published_at || b.published).getTime()
+              return dateB - dateA
+            })
 
           return NextResponse.json({
             success: true,
@@ -131,19 +161,30 @@ export async function GET() {
           })
         } else if (data.articles && Array.isArray(data.articles)) {
           // 处理articles格式
-          const articles = data.articles.map((article: any) => ({
-            title: article.title || '无标题',
-            slug: article.slug || '',
-            link: `https://www.jianshu.com/p/${article.slug}`,
-            content: article.content || '',
-            contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
-            published: article.published_at || article.created_at || new Date().toISOString(),
-            formattedDate: formatDate(article.published_at || article.created_at),
-            author: article.user?.nickname || '未知作者',
-            views: article.views_count || 0,
-            likes: article.likes_count || 0,
-            comments: article.comments_count || 0
-          }))
+          const articles = data.articles
+            .map((article: any) => {
+              const publishedAt = article.published_at || article.created_at || new Date().toISOString()
+              return {
+                title: article.title || '无标题',
+                slug: article.slug || '',
+                link: `https://www.jianshu.com/p/${article.slug}`,
+                published_at: publishedAt,
+                content: article.content || '',
+                contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
+                published: publishedAt,
+                formattedDate: formatDate(publishedAt),
+                author: article.user?.nickname || '未知作者',
+                views: article.views_count || 0,
+                likes: article.likes_count || 0,
+                comments: article.comments_count || 0
+              }
+            })
+            // 按发布时间倒序排序（最新的在前）
+            .sort((a: any, b: any) => {
+              const dateA = new Date(a.published_at || a.published).getTime()
+              const dateB = new Date(b.published_at || b.published).getTime()
+              return dateB - dateA
+            })
 
           return NextResponse.json({
             success: true,

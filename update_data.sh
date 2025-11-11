@@ -22,13 +22,14 @@ else
 fi
 cd ..
 
-# 更新豆瓣RSS数据 (Node.js版本，备用)
-echo "🌱 更新豆瓣RSS数据 (Node.js，备用)..."
-if [ -f "fetch_douban_rss.js" ]; then
-    node fetch_douban_rss.js
-else
-    echo "❌ Node.js豆瓣RSS抓取脚本不存在"
-fi
+# 豆瓣RSS数据已通过Python版本获取（见上面的douban-rss-fetcher部分）
+# Node.js版本已不再使用，避免重复抓取
+# echo "🌱 更新豆瓣RSS数据 (Node.js，备用)..."
+# if [ -f "fetch_douban_rss.js" ]; then
+#     node fetch_douban_rss.js
+# else
+#     echo "❌ Node.js豆瓣RSS抓取脚本不存在"
+# fi
 
 # 更新简书数据
 echo "📝 更新简书文章数据..."
@@ -52,16 +53,17 @@ else
 fi
 cd ..
 
-# 更新豆瓣数据
-echo "📚 更新豆瓣收藏数据..."
-cd douban-spider
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh
-else
-    echo "❌ 豆瓣爬虫脚本不存在"
-fi
-cd ..
+# 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
+# 收藏数据现在通过豆瓣RSS获取（见上面的douban-rss-fetcher部分）
+# echo "📚 更新豆瓣收藏数据..."
+# cd douban-spider
+# if [ -f "run.sh" ]; then
+#     chmod +x run.sh
+#     ./run.sh
+# else
+#     echo "❌ 豆瓣爬虫脚本不存在"
+# fi
+# cd ..
 
 # 更新YouTube数据
 echo "📺 更新YouTube视频数据..."

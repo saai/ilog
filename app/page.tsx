@@ -1,5 +1,8 @@
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ThumbnailImage from '@/components/ThumbnailImage'
+import { transformBilibili, transformJianshu, transformYouTube, mergeAndSortTimelineItems } from './timeline/transformers'
+import { TimelineItem } from './timeline/types'
 
 // 平台配置
 const platforms = [
@@ -39,11 +42,11 @@ const platforms = [
     description: '书影音分享平台'
   },
   {
-    name: '小红书',
-    icon: '📖',
-    color: 'bg-red-50 text-red-700 hover:bg-red-100',
-    url: 'https://www.xiaohongshu.com/user/profile/495845372',
-    description: '生活方式分享平台'
+    name: 'Instagram',
+    icon: '📷',
+    color: 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 hover:from-purple-100 hover:to-pink-100',
+    url: 'https://www.instagram.com/shayansaai/',
+    description: '图片社交平台'
   }
 ]
 
@@ -51,7 +54,7 @@ const platforms = [
 async function getBilibiliVideos() {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/bilibili-videos`, {
-      next: { revalidate: 1800 } // 缓存30分钟
+      cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
     if (!response.ok) {
@@ -71,7 +74,7 @@ async function getBilibiliVideos() {
 async function getJianshuArticles() {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/jianshu-articles`, {
-      next: { revalidate: 1800 } // 缓存30分钟
+      cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
     if (!response.ok) {
@@ -91,7 +94,7 @@ async function getJianshuArticles() {
 async function getYouTubeVideos() {
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/youtube-videos`, {
-      next: { revalidate: 1800 } // 缓存30分钟
+      cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
     if (!response.ok) {
@@ -108,31 +111,86 @@ async function getYouTubeVideos() {
 }
 
 export default async function HomePage() {
-  // 获取B站最新视频数据
-  const bilibiliData = await getBilibiliVideos()
+  // 获取所有平台数据
+  const [bilibiliData, jianshuData, youtubeData] = await Promise.all([
+    getBilibiliVideos(),
+    getJianshuArticles(),
+    getYouTubeVideos()
+  ])
+
+  // 转换为统一的时间流格式并合并排序
+  const timelineItems: TimelineItem[] = []
+
+  // 转换B站视频数据
+  if (bilibiliData?.success && bilibiliData.data?.videos) {
+    bilibiliData.data.videos.forEach((video: any, index: number) => {
+      const transformed = transformBilibili({
+        title: video.title,
+        url: video.url,
+        publish_time: video.publish_time || '',
+        published_at: video.published_at || null,
+        play_count: video.play_count || '0',
+        cover_url: video.cover_url || '',
+        formattedDate: video.formattedDate,
+        fetched_at: video.fetched_at || new Date().toISOString()
+      }, index)
+      if (transformed) timelineItems.push(transformed)
+    })
+  }
+
+  // 转换简书文章数据
+  if (jianshuData?.success && jianshuData.data?.articles) {
+    jianshuData.data.articles.forEach((article: any, index: number) => {
+      const transformed = transformJianshu({
+        title: article.title,
+        link: article.link,
+        slug: article.slug || '',
+        published_at: article.published_at || null,
+        fetched_at: article.fetched_at || new Date().toISOString(),
+        formattedDate: article.formattedDate,
+        user_id: article.user_id || ''
+      }, index)
+      if (transformed) timelineItems.push(transformed)
+    })
+  }
+
+  // 转换YouTube视频数据
+  if (youtubeData?.success && youtubeData.data?.videos) {
+    youtubeData.data.videos.forEach((video: any, index: number) => {
+      const transformed = transformYouTube({
+        video_id: video.video_id || '',
+        title: video.title,
+        url: video.url,
+        published_at: video.published_at || '',
+        description: video.description,
+        thumbnail_url: video.thumbnail_url,
+        channel_name: video.channel_name,
+        formattedDate: video.formattedDate,
+        fetched_at: video.fetched_at || new Date().toISOString()
+      }, index)
+      if (transformed) timelineItems.push(transformed)
+    })
+  }
+
+  // 按发布时间排序（最新的在前）
+  const sortedItems = mergeAndSortTimelineItems(timelineItems)
+  
+  // 获取最新的三个（按时间顺序）
+  const latestItems = sortedItems.slice(0, 3)
+
+  // 为了向后兼容，保留原有的变量
   const latestVideo = bilibiliData?.success && bilibiliData.data?.videos?.length > 0 
     ? bilibiliData.data.videos[0] 
     : null
-  
-  // 获取错误信息
-  const errorMessage = bilibiliData?.message || null
-
-  // 获取简书最新文章数据
-  const jianshuData = await getJianshuArticles()
   const latestArticle = jianshuData?.success && jianshuData.data?.articles?.length > 0 
     ? jianshuData.data.articles[0] 
     : null
-  
-  // 获取简书错误信息
-  const jianshuErrorMessage = jianshuData?.error || null
-
-  // 获取YouTube最新视频数据
-  const youtubeData = await getYouTubeVideos()
   const latestYouTubeVideo = youtubeData?.success && youtubeData.data?.videos?.length > 0 
     ? youtubeData.data.videos[0] 
     : null
   
-  // 获取YouTube错误信息
+  const errorMessage = bilibiliData?.message || null
+  const jianshuErrorMessage = jianshuData?.error || null
   const youtubeErrorMessage = youtubeData?.error || null
 
   return (
@@ -147,151 +205,69 @@ export default async function HomePage() {
         {/* Latest Updates Hero Section */}
         <section className="artistic-gradient text-white py-20 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            {/* Latest Updates Grid */}
+            {/* Latest Updates Grid - 按时间顺序显示最新内容 */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* YouTube Update - 动态数据 */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-red-100/20 rounded-xl flex items-center justify-center text-2xl mr-4">
-                    📺
-                  </div>
-                  <div>
-                    <h3 className="font-display font-semibold text-white text-lg">YouTube</h3>
-                    <p className="text-sm text-white/80">最新视频发布</p>
-                  </div>
-                </div>
-                {latestYouTubeVideo ? (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed line-clamp-2">
-                      {latestYouTubeVideo.title}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">{latestYouTubeVideo.formattedDate}</span>
-                      <a
-                        href={latestYouTubeVideo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        观看视频 →
-                      </a>
+              {latestItems.length > 0 ? (
+                latestItems.map((item, index) => {
+                  // 根据平台类型确定链接文本和图标颜色
+                  const linkText = item.platform === 'jianshu' ? '阅读文章 →' : 
+                                   item.platform === 'bilibili' || item.platform === 'youtube' ? '观看视频 →' : 
+                                   '查看详情 →'
+                  
+                  const iconBgColor = item.platform === 'youtube' ? 'bg-red-100/20' :
+                                     item.platform === 'bilibili' ? 'bg-pink-100/20' :
+                                     item.platform === 'jianshu' ? 'bg-green-100/20' :
+                                     'bg-yellow-100/20'
+                  
+                  return (
+                    <div key={item.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
+                      <div className="flex items-center mb-4">
+                        <div className={`w-12 h-12 ${iconBgColor} rounded-xl flex items-center justify-center text-2xl mr-4`}>
+                          {item.platformIcon}
+                        </div>
+                        <div>
+                          <h3 className="font-display font-semibold text-white text-lg">{item.platformName}</h3>
+                          <p className="text-sm text-white/80">最新内容</p>
+                        </div>
+                      </div>
+                      
+                      {/* 缩略图 */}
+                      <ThumbnailImage 
+                        src={item.thumbnail || ''} 
+                        alt={item.title}
+                      />
+                      
+                      <p className="text-white/90 mb-4 leading-relaxed line-clamp-2">
+                        {item.title}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">{item.formattedDate}</span>
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
+                        >
+                          {linkText}
+                        </a>
+                      </div>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed">
-                      {youtubeErrorMessage || '暂无YouTube视频数据'}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">--</span>
-                      <a
-                        href="https://www.youtube.com/@saai-saai"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        访问主页 →
-                      </a>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Bilibili Update - 动态数据 */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-pink-100/20 rounded-xl flex items-center justify-center text-2xl mr-4">
-                    📱
+                  )
+                })
+              ) : (
+                // 如果没有数据，显示占位符
+                <>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
                   </div>
-                  <div>
-                    <h3 className="font-display font-semibold text-white text-lg">哔哩哔哩</h3>
-                    <p className="text-sm text-white/80">最新视频更新</p>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
                   </div>
-                </div>
-                {latestVideo ? (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed line-clamp-2">
-                      {latestVideo.title}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">{latestVideo.formattedDate}</span>
-                      <a
-                        href={latestVideo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        观看视频 →
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed">
-                      {errorMessage || '暂无B站视频数据'}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">--</span>
-                      <a
-                        href="https://space.bilibili.com/472773672"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        访问主页 →
-                      </a>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Jianshu Update - 动态数据 */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-green-100/20 rounded-xl flex items-center justify-center text-2xl mr-4">
-                    📝
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
                   </div>
-                  <div>
-                    <h3 className="font-display font-semibold text-white text-lg">简书</h3>
-                    <p className="text-sm text-white/80">最新文章分享</p>
-                  </div>
-                </div>
-                {latestArticle ? (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed line-clamp-2">
-                      {latestArticle.title}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">{latestArticle.formattedDate}</span>
-                      <a
-                        href={latestArticle.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        阅读文章 →
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-white/90 mb-4 leading-relaxed">
-                      {jianshuErrorMessage || '暂无简书文章数据'}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/70 text-sm">--</span>
-                      <a
-                        href="https://www.jianshu.com/u/763ffbb1b873"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                      >
-                        访问主页 →
-                      </a>
-                    </div>
-                  </>
-                )}
-              </div>
+                </>
+              )}
             </div>
 
             {/* View All Updates Button */}

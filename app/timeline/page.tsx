@@ -1,5 +1,6 @@
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ThumbnailImage from '@/components/ThumbnailImage'
 import fs from 'fs'
 import path from 'path'
 import { TimelineItem } from './types'
@@ -124,17 +125,9 @@ async function getDoubanRSSData() {
 }
 
 async function getDoubanData() {
-  try {
-    const jsonPath = path.join(process.cwd(), 'douban-spider', 'douban_collections.json')
-    if (!fs.existsSync(jsonPath)) {
-      return { success: false, error: '豆瓣数据文件不存在' }
-    }
-    const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-    const data = JSON.parse(jsonData)
-    return { success: true, data }
-  } catch (error) {
-    return { success: false, error: '读取豆瓣数据失败' }
-  }
+  // 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
+  // 收藏数据现在通过豆瓣RSS获取（见 getDoubanRSSData）
+  return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
 }
 
 async function getBilibiliData() {
@@ -182,19 +175,23 @@ async function getYouTubeData() {
 // 注意：formatRelativeTime 和 parseRFC822Date 函数已移至 transformers.ts
 
 // 合并所有平台数据并排序（使用统一的转换器）
-function mergeAndSortData(
+async function mergeAndSortData(
   doubanRSSData: DoubanRSSData | null,
   doubanData: any,
   bilibiliData: BilibiliData | null,
   jianshuData: JianshuData | null,
   youtubeData: YouTubeData | null
-): TimelineItem[] {
+): Promise<TimelineItem[]> {
   const items: TimelineItem[] = []
 
   // 转换豆瓣RSS数据
   if (doubanRSSData) {
-    doubanRSSData.collections.forEach((item, index) => {
-      const transformed = transformDoubanRSS(item, index, doubanRSSData.fetched_at)
+    const transformedItems = await Promise.all(
+      doubanRSSData.collections.map((item, index) => 
+        transformDoubanRSS(item, index, doubanRSSData.fetched_at)
+      )
+    )
+    transformedItems.forEach(transformed => {
       if (transformed) items.push(transformed)
     })
   }
@@ -245,7 +242,7 @@ export default async function TimelinePage() {
   ])
 
   // 合并并排序数据
-  const timelineItems = mergeAndSortData(
+  const timelineItems = await mergeAndSortData(
     doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null,
     doubanResult.success && doubanResult.data ? doubanResult.data : null,
     bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null,
@@ -268,6 +265,24 @@ export default async function TimelinePage() {
     acc[dateKey].push(item)
     return acc
   }, {} as Record<string, TimelineItem[]>)
+
+  // 确保每个日期组内的条目按时间倒序排序（最新的在前）
+  Object.keys(groupedByDate).forEach(dateKey => {
+    groupedByDate[dateKey].sort((a, b) => 
+      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    )
+  })
+
+  // 按日期排序（最新的日期在前）
+  // 使用每个日期组中第一个条目的时间进行排序（因为已经排序，第一个就是最新的）
+  const sortedDateKeys = Object.keys(groupedByDate).sort((a, b) => {
+    const itemsA = groupedByDate[a]
+    const itemsB = groupedByDate[b]
+    // 取每个日期组中第一个条目的时间（因为已经排序，第一个就是最新的）
+    const dateA = itemsA && itemsA.length > 0 ? new Date(itemsA[0].publishedAt).getTime() : 0
+    const dateB = itemsB && itemsB.length > 0 ? new Date(itemsB[0].publishedAt).getTime() : 0
+    return dateB - dateA
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -318,7 +333,9 @@ export default async function TimelinePage() {
 
               {/* 时间流条目 */}
               <div className="space-y-8">
-                {Object.entries(groupedByDate).map(([dateKey, items]) => (
+                {sortedDateKeys.map((dateKey) => {
+                  const items = groupedByDate[dateKey]
+                  return (
                   <div key={dateKey} className="relative">
                     {/* 日期标题 */}
                     <div className="sticky top-4 z-10 mb-6">
@@ -366,6 +383,14 @@ export default async function TimelinePage() {
                                 <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">
                                   {item.title}
                                 </h3>
+
+                                {/* 缩略图 */}
+                                <ThumbnailImage 
+                                  src={item.thumbnail || ''} 
+                                  alt={item.title}
+                                  height="h-40"
+                                  containerClassName="bg-gray-50"
+                                />
 
                                 {/* 元数据 */}
                                 <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
@@ -429,7 +454,8 @@ export default async function TimelinePage() {
                       ))}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
