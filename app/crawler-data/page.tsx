@@ -35,6 +35,21 @@ interface DoubanItem {
   fetched_at: string
 }
 
+interface DoubanData {
+  collections: DoubanItem[]
+  total: number
+  user: {
+    id: string
+    nickname: string
+  }
+  fetched_at: string
+}
+
+// 数据获取结果的类型定义
+type DataResult<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string }
+
 // B站视频项的类型定义
 interface BilibiliVideo {
   title: string
@@ -71,7 +86,7 @@ interface JianshuData {
 }
 
 // 服务器端数据获取函数
-async function getDoubanRSSData() {
+async function getDoubanRSSData(): Promise<DataResult<DoubanRSSData>> {
   try {
     const possiblePaths = [
       path.join(process.cwd(), 'douban_rss_data.json'),
@@ -92,13 +107,13 @@ async function getDoubanRSSData() {
   }
 }
 
-async function getDoubanData() {
+async function getDoubanData(): Promise<DataResult<DoubanData>> {
   // 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
   // 收藏数据现在通过豆瓣RSS获取（见 getDoubanRSSData）
   return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
 }
 
-async function getBilibiliData() {
+async function getBilibiliData(): Promise<DataResult<BilibiliData>> {
   try {
     const jsonPath = path.join(process.cwd(), 'bilibili-spider', 'bilibili_videos.json')
     if (!fs.existsSync(jsonPath)) {
@@ -112,7 +127,7 @@ async function getBilibiliData() {
   }
 }
 
-async function getJianshuData() {
+async function getJianshuData(): Promise<DataResult<JianshuData>> {
   try {
     const jsonPath = path.join(process.cwd(), 'jianshu-spider', 'jianshu_articles.json')
     if (!fs.existsSync(jsonPath)) {
@@ -409,7 +424,7 @@ export default async function CrawlerDataPage() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">豆瓣数据获取失败</h3>
                 <p className="text-gray-600">{doubanResult.error}</p>
               </div>
-            ) : (
+            ) : doubanResult.success && doubanResult.data ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {doubanResult.data.collections?.map((item: DoubanItem, index: number) => (
                   <a
@@ -448,7 +463,7 @@ export default async function CrawlerDataPage() {
                   </a>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 

@@ -124,7 +124,7 @@ async function getDoubanRSSData() {
   }
 }
 
-async function getDoubanData() {
+async function getDoubanData(): Promise<{ success: false; error: string }> {
   // 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
   // 收藏数据现在通过豆瓣RSS获取（见 getDoubanRSSData）
   return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
@@ -244,7 +244,7 @@ export default async function TimelinePage() {
   // 合并并排序数据
   const timelineItems = await mergeAndSortData(
     doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null,
-    doubanResult.success && doubanResult.data ? doubanResult.data : null,
+    null, // doubanResult 总是返回失败，直接传递 null
     bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null,
     jianshuResult.success && jianshuResult.data ? jianshuResult.data : null,
     youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
