@@ -1,7 +1,5 @@
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import fs from 'fs'
-import path from 'path'
 
 // 豆瓣RSS收藏项的类型定义
 interface DoubanRSSItem {
@@ -85,25 +83,33 @@ interface JianshuData {
   articles: JianshuArticle[]
 }
 
-// 服务器端数据获取函数
+// 服务器端数据获取函数 - 从API获取数据
 async function getDoubanRSSData(): Promise<DataResult<DoubanRSSData>> {
   try {
-    const possiblePaths = [
-      path.join(process.cwd(), 'douban_rss_data.json'),
-      path.join(process.cwd(), 'douban-rss-fetcher', 'douban_rss_data.json'),
-      path.join(process.cwd(), 'douban-rss.json')
-    ]
-    
-    for (const jsonPath of possiblePaths) {
-      if (fs.existsSync(jsonPath)) {
-        const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-        const data = JSON.parse(jsonData)
-        return { success: true, data: data as DoubanRSSData }
-      }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const response = await fetch(`${baseUrl}/api/douban-rss`, {
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      return { success: false, error: '豆瓣RSS API请求失败' }
     }
-    return { success: false, error: '豆瓣RSS数据文件不存在' }
+
+    const result = await response.json()
+    if (result.success && result.data) {
+      const data: DoubanRSSData = {
+        collections: result.data.collections || result.data.interests || [],
+        total: result.data.total || 0,
+        user: result.data.user || { id: '', nickname: '' },
+        fetched_at: result.data.fetched_at || new Date().toISOString()
+      }
+      return { success: true, data }
+    }
+    return { success: false, error: result.error || '豆瓣RSS数据获取失败' }
   } catch (error) {
-    return { success: false, error: '读取豆瓣RSS数据失败' }
+    console.error('获取豆瓣RSS数据失败:', error)
+    return { success: false, error: '获取豆瓣RSS数据失败' }
   }
 }
 
@@ -115,29 +121,59 @@ async function getDoubanData(): Promise<DataResult<DoubanData>> {
 
 async function getBilibiliData(): Promise<DataResult<BilibiliData>> {
   try {
-    const jsonPath = path.join(process.cwd(), 'bilibili-spider', 'bilibili_videos.json')
-    if (!fs.existsSync(jsonPath)) {
-      return { success: false, error: 'B站数据文件不存在' }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const response = await fetch(`${baseUrl}/api/bilibili-videos`, {
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      return { success: false, error: 'B站API请求失败' }
     }
-    const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-    const data = JSON.parse(jsonData)
-    return { success: true, data: data as BilibiliData }
+
+    const result = await response.json()
+    if (result.success && result.data) {
+      const data: BilibiliData = {
+        user_id: result.data.user?.id || '',
+        total_videos: result.data.total || 0,
+        fetched_at: new Date().toISOString(),
+        videos: result.data.videos || []
+      }
+      return { success: true, data }
+    }
+    return { success: false, error: result.error || 'B站数据获取失败' }
   } catch (error) {
-    return { success: false, error: '读取B站数据失败' }
+    console.error('获取B站数据失败:', error)
+    return { success: false, error: '获取B站数据失败' }
   }
 }
 
 async function getJianshuData(): Promise<DataResult<JianshuData>> {
   try {
-    const jsonPath = path.join(process.cwd(), 'jianshu-spider', 'jianshu_articles.json')
-    if (!fs.existsSync(jsonPath)) {
-      return { success: false, error: '简书数据文件不存在' }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const response = await fetch(`${baseUrl}/api/jianshu-articles`, {
+      cache: 'no-store'
+    })
+
+    if (!response.ok) {
+      return { success: false, error: '简书API请求失败' }
     }
-    const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-    const data = JSON.parse(jsonData)
-    return { success: true, data: data as JianshuData }
+
+    const result = await response.json()
+    if (result.success && result.data) {
+      const data: JianshuData = {
+        user_id: result.data.user?.id || '',
+        total_articles: result.data.total || 0,
+        fetched_at: new Date().toISOString(),
+        articles: result.data.articles || []
+      }
+      return { success: true, data }
+    }
+    return { success: false, error: result.error || '简书数据获取失败' }
   } catch (error) {
-    return { success: false, error: '读取简书数据失败' }
+    console.error('获取简书数据失败:', error)
+    return { success: false, error: '获取简书数据失败' }
   }
 }
 

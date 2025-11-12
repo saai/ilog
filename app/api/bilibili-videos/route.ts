@@ -1,96 +1,11 @@
 import { NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
-
-// 解析 publish_time 字符串为 ISO 格式的 published_at
-function parsePublishTime(publishTime: string): string | null {
-  if (!publishTime || publishTime.trim() === '') {
-    return null
-  }
-  
-  try {
-    // 格式: "2025-11-10 11:24:53" 或 "2025-11-10T11:24:53"
-    const timeStr = publishTime.trim()
-    
-    // 尝试解析 "YYYY-MM-DD HH:mm:ss" 格式
-    if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(timeStr)) {
-      const date = new Date(timeStr.replace(' ', 'T'))
-      if (!isNaN(date.getTime())) {
-        return date.toISOString()
-      }
-    }
-    
-    // 尝试解析 ISO 格式
-    const date = new Date(timeStr)
-    if (!isNaN(date.getTime())) {
-      return date.toISOString()
-    }
-  } catch (error) {
-    console.warn('解析 publish_time 失败:', publishTime, error)
-  }
-  
-  return null
-}
 
 export async function GET() {
   const userId = '472773672' // 您的B站用户ID
   
-  // 首先尝试读取本地JSON文件（如果存在）
+  // 直接从在线API获取数据，不再读取本地文件
   try {
-    const jsonPath = path.join(process.cwd(), 'bilibili-spider', 'bilibili_videos.json')
-    const fileContent = await fs.readFile(jsonPath, 'utf-8')
-    const data = JSON.parse(fileContent)
-    
-    console.log('成功读取本地B站视频数据')
-    console.log(`数据获取时间: ${data.fetched_at}`)
-    console.log(`视频数量: ${data.videos?.length || 0}`)
-    
-    // 转换数据格式，从 publish_time 解析 published_at
-    const videos = (data.videos || [])
-      .map((video: any) => {
-        // 从 publish_time 解析 published_at
-        const publishedAt = video.published_at || parsePublishTime(video.publish_time) || null
-        
-        return {
-          title: video.title,
-          url: video.url,
-          publish_time: video.publish_time || '',
-          published_at: publishedAt, // 从 publish_time 解析
-          play_count: video.play_count || '0',
-          cover_url: video.cover_url || '',
-          published: publishedAt, // 向后兼容
-          formattedDate: publishedAt ? formatDate(publishedAt) : '未知时间',
-          fetched_at: video.fetched_at || new Date().toISOString()
-        }
-      })
-      .filter((video: any) => video.published_at !== null) // 只保留有发布时间的视频
-      // 按发布时间倒序排序（最新的在前）
-      .sort((a: any, b: any) => {
-        const dateA = new Date(a.published_at || a.published).getTime()
-        const dateB = new Date(b.published_at || b.published).getTime()
-        return dateB - dateA
-      })
-    
-    if (videos.length > 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          videos,
-          total: videos.length,
-          user: {
-            id: userId,
-            nickname: 'Saai'
-          }
-        }
-      })
-    }
-  } catch (error) {
-    console.log('本地JSON文件不存在或读取失败，尝试在线API:', error)
-  }
-  
-  // 如果本地文件不存在，尝试在线API
-  try {
-    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=10&order=pubdate`
+    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=30&order=pubdate`
     
     const response = await fetch(apiUrl, {
       headers: {

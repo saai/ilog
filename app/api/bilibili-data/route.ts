@@ -1,31 +1,55 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
 
 export async function GET() {
+  // 直接从在线API获取数据，不再读取本地文件
   try {
-    // 读取B站爬虫生成的JSON文件
-    const jsonPath = path.join(process.cwd(), 'bilibili-spider', 'bilibili_videos.json')
+    const userId = '472773672'
+    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=30&order=pubdate`
     
-    if (!fs.existsSync(jsonPath)) {
-      return NextResponse.json({
-        success: false,
-        error: 'B站数据文件不存在，请先运行爬虫'
-      })
-    }
-
-    const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-    const data = JSON.parse(jsonData)
-
-    return NextResponse.json({
-      success: true,
-      data: data
+    const response = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://space.bilibili.com/',
+        'Accept': 'application/json, text/plain, */*'
+      },
+      next: { revalidate: 1800 } // 缓存30分钟
     })
-  } catch (error) {
-    console.error('读取B站数据失败:', error)
+
+    if (response.ok) {
+      const data = await response.json()
+      
+      if (data.code === 0 && data.data?.list?.vlist) {
+        const videos = data.data.list.vlist.map((video: any) => ({
+          title: video.title,
+          url: `https://www.bilibili.com/video/${video.bvid}`,
+          publish_time: new Date(video.created * 1000).toLocaleString('zh-CN'),
+          published_at: new Date(video.created * 1000).toISOString(),
+          play_count: String(video.play || 0),
+          cover_url: video.pic || '',
+          fetched_at: new Date().toISOString()
+        }))
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            user_id: userId,
+            total_videos: videos.length,
+            fetched_at: new Date().toISOString(),
+            videos: videos
+          }
+        })
+      }
+    }
+    
     return NextResponse.json({
       success: false,
-      error: '读取B站数据失败'
+      error: 'B站API请求失败'
+    })
+  } catch (error) {
+    console.error('获取B站数据失败:', error)
+    return NextResponse.json({
+      success: false,
+      error: '获取B站数据失败'
     })
   }
 } 
