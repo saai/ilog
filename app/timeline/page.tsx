@@ -106,9 +106,15 @@ interface YouTubeData {
 // 服务器端数据获取函数 - 通过 API 路由获取数据
 async function getDoubanRSSData() {
   try {
-    // 在服务器端，使用相对路径或根据环境变量构建URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    if (!baseUrl) {
+      if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`
+      } else if (process.env.NODE_ENV === 'development') {
+        baseUrl = 'http://localhost:3000'
+      }
+    }
     const apiUrl = baseUrl ? `${baseUrl}/api/douban-rss` : '/api/douban-rss'
     const response = await fetch(apiUrl, {
       cache: 'no-store'
@@ -141,9 +147,15 @@ async function getDoubanData(): Promise<{ success: false; error: string }> {
 
 async function getBilibiliData() {
   try {
-    // 在服务器端，使用相对路径或根据环境变量构建URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    if (!baseUrl) {
+      if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`
+      } else if (process.env.NODE_ENV === 'development') {
+        baseUrl = 'http://localhost:3000'
+      }
+    }
     const apiUrl = baseUrl ? `${baseUrl}/api/bilibili-videos` : '/api/bilibili-videos'
     const response = await fetch(apiUrl, {
       cache: 'no-store'
@@ -179,9 +191,15 @@ async function getBilibiliData() {
 
 async function getJianshuData() {
   try {
-    // 在服务器端，使用相对路径或根据环境变量构建URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    if (!baseUrl) {
+      if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`
+      } else if (process.env.NODE_ENV === 'development') {
+        baseUrl = 'http://localhost:3000'
+      }
+    }
     const apiUrl = baseUrl ? `${baseUrl}/api/jianshu-articles` : '/api/jianshu-articles'
     const response = await fetch(apiUrl, {
       cache: 'no-store'
@@ -217,9 +235,15 @@ async function getJianshuData() {
 
 async function getYouTubeData() {
   try {
-    // 在服务器端，使用相对路径或根据环境变量构建URL
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    if (!baseUrl) {
+      if (process.env.VERCEL_URL) {
+        baseUrl = `https://${process.env.VERCEL_URL}`
+      } else if (process.env.NODE_ENV === 'development') {
+        baseUrl = 'http://localhost:3000'
+      }
+    }
     const apiUrl = baseUrl ? `${baseUrl}/api/youtube-videos` : '/api/youtube-videos'
     const response = await fetch(apiUrl, {
       cache: 'no-store'
