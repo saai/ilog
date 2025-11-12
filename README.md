@@ -182,12 +182,35 @@ chmod +x run.sh
 - ✅ 部署状态会显示在 GitHub 的 Pull Request 中
 - ✅ 部署完成后会生成预览 URL
 
-### 环境变量配置（如需要）
+### 环境变量配置
 
-如果项目需要环境变量，在 Vercel Dashboard 中配置：
-1. 进入项目 Settings
-2. 选择 Environment Variables
-3. 添加所需的环境变量（如 `NEXT_PUBLIC_BASE_URL` 等）
+#### 本地开发环境
+
+在项目根目录创建 `.env.local` 文件（已包含在 `.gitignore` 中，不会被提交）：
+
+```bash
+# .env.local
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+**注意**：如果不设置 `NEXT_PUBLIC_BASE_URL`，代码会自动检测开发环境并使用 `http://localhost:3000`，所以这个环境变量在本地开发时是可选的。
+
+#### Vercel 部署环境
+
+在 Vercel Dashboard 中配置环境变量：
+
+1. 登录 [Vercel Dashboard](https://vercel.com/dashboard)
+2. 选择你的项目
+3. 进入 **Settings** → **Environment Variables**
+4. 添加环境变量：
+   - **Name**: `NEXT_PUBLIC_BASE_URL`
+   - **Value**: 你的 Vercel 部署 URL（例如：`https://your-project.vercel.app`）
+   - **Environment**: 选择 `Production`、`Preview` 和 `Development`（根据需要）
+
+**注意**：
+- 在 Vercel 上，如果不设置 `NEXT_PUBLIC_BASE_URL`，代码会自动使用 `VERCEL_URL` 环境变量（Vercel 自动提供）
+- 所以对于 Vercel 部署，`NEXT_PUBLIC_BASE_URL` 通常也是可选的
+- 只有在需要自定义基础 URL 时才需要设置
 
 ### 部署检查清单
 
