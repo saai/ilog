@@ -293,6 +293,113 @@ vercel env add NEXT_PUBLIC_BASE_URL development
 3. 确保所有 API 路由正确配置
 4. 检查网络请求是否正常（API 调用）
 
+### 查看网站访问请求和日志
+
+在 Vercel Dashboard 中查看实时请求和日志：
+
+#### 方法一：通过 Deployments 页面查看
+
+1. **进入项目 Dashboard**
+   - 登录 [Vercel Dashboard](https://vercel.com/dashboard)
+   - 选择你的项目
+
+2. **查看部署详情**
+   - 点击 **Deployments** 标签
+   - 选择最新的部署（或任何部署）
+   - 点击部署卡片进入详情页
+
+3. **查看构建和函数日志**
+   - 在部署详情页，可以看到：
+     - **Build Logs** - 构建过程的日志
+     - **Function Logs** - API 路由的执行日志
+     - **Runtime Logs** - 运行时日志
+
+#### 方法二：通过 Analytics 查看（需要 Pro 计划）
+
+1. **进入 Analytics**
+   - 在项目 Dashboard 中，点击 **Analytics** 标签
+   - 可以查看：
+     - 请求数量
+     - 响应时间
+     - 错误率
+     - 地理位置分布
+
+#### 方法三：通过 Functions 页面查看实时日志
+
+1. **查看函数日志**
+   - 在项目 Dashboard 中，点击 **Functions** 标签
+   - 可以看到所有 API 路由的调用情况
+   - 点击任意函数可以查看详细日志
+
+2. **实时日志流**
+   - 在 Functions 页面，可以看到实时的函数调用日志
+   - 包括请求时间、状态码、执行时间等信息
+
+#### 方法四：使用 Vercel CLI 查看日志
+
+```bash
+# 安装 Vercel CLI（如果还没有安装）
+npm i -g vercel
+
+# 登录 Vercel
+vercel login
+
+# 查看实时日志
+vercel logs
+
+# 查看特定部署的日志
+vercel logs [deployment-url]
+
+# 持续查看日志（类似 tail -f）
+vercel logs --follow
+```
+
+#### 方法五：在代码中添加日志
+
+在 API 路由中添加 `console.log` 或 `console.error`，这些日志会出现在 Vercel 的函数日志中：
+
+```typescript
+// app/api/bilibili-videos/route.ts
+export async function GET() {
+  console.log('收到B站视频API请求')
+  console.log('请求时间:', new Date().toISOString())
+  
+  try {
+    // ... API 逻辑
+    console.log('成功获取B站数据，视频数量:', videos.length)
+    return NextResponse.json({ success: true, data: { videos } })
+  } catch (error) {
+    console.error('获取B站数据失败:', error)
+    return NextResponse.json({ success: false, error: '获取失败' })
+  }
+}
+```
+
+#### 查看日志的最佳实践
+
+1. **使用有意义的日志消息**
+   - 包含时间戳、请求ID、用户信息等
+   - 区分不同级别的日志（info, warn, error）
+
+2. **查看实时日志**
+   - 在 Vercel Dashboard 的 Functions 页面可以实时查看日志
+   - 使用 `vercel logs --follow` 在终端实时查看
+
+3. **过滤和搜索日志**
+   - 在 Vercel Dashboard 中可以使用搜索功能过滤日志
+   - 按时间、函数名、状态码等过滤
+
+4. **监控错误**
+   - 在 Analytics 页面查看错误率
+   - 在 Functions 页面查看失败的请求
+   - 设置错误告警（需要 Pro 计划）
+
+#### 注意事项
+
+- **免费计划限制**：免费计划可以查看基本的日志，但功能有限
+- **日志保留时间**：Vercel 会保留一定时间的日志（通常为 7-30 天，取决于计划）
+- **性能影响**：过多的日志可能影响性能，建议在生产环境中适度使用
+
 ### 回滚部署
 
 如果需要回滚到之前的版本：
