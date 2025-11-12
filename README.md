@@ -17,13 +17,15 @@ iLog/
 │   ├── api/               # API 路由
 │   │   ├── bilibili-videos/     # B站视频API
 │   │   ├── douban-rss/          # 豆瓣收藏API
-│   │   └── jianshu-articles/    # 简书文章API
+│   │   ├── jianshu-articles/    # 简书文章API
+│   │   └── youtube-videos/      # YouTube视频API
 │   ├── page.tsx           # 首页
 │   └── timeline/          # 时间流页面
 ├── components/             # React 组件
 ├── jianshu-spider/        # 简书爬虫项目
 ├── bilibili-spider/       # B站爬虫项目
 ├── douban-rss-fetcher/    # 豆瓣RSS抓取器
+├── youtube-spider/        # YouTube爬虫项目（可选）
 └── update_data.sh         # 数据更新脚本
 ```
 
@@ -71,6 +73,16 @@ chmod +x run.sh
 
 通过豆瓣RSS获取用户的最新收藏（书籍、电影等）。
 
+### YouTube爬虫 (youtube-spider)
+
+获取YouTube频道的最新视频（可选，用于本地备份）。
+
+```bash
+cd youtube-spider
+chmod +x run.sh
+./run.sh
+```
+
 **注意**: 所有数据现在直接从在线API实时获取，爬虫项目仅用于本地数据备份（可选）。
 
 ## 🔧 配置说明
@@ -94,6 +106,10 @@ chmod +x run.sh
 - `/api/bilibili-videos` - 从B站API实时获取视频数据
 - `/api/douban-rss` - 从豆瓣RSS feed实时获取收藏数据
 - `/api/youtube-videos` - 从YouTube RSS feed实时获取视频数据
+  - 使用YouTube官方RSS feed: `https://www.youtube.com/feeds/videos.xml?channel_id={channelId}`
+  - 支持通过 `channel_id` 或 `channel_handle` 获取数据
+  - 自动解析视频ID、标题、发布时间等信息
+  - 生成视频缩略图URL
 
 ## 🛠️ 技术栈
 
