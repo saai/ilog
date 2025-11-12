@@ -56,16 +56,22 @@ const platforms = [
 // 获取B站最新视频数据
 async function getBilibiliVideos() {
   try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
+    // 在构建时，如果没有可用的URL，直接返回null（避免连接错误）
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     if (!baseUrl) {
-      if (process.env.VERCEL_URL) {
+      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
+      if (process.env.VERCEL && process.env.VERCEL_URL) {
         baseUrl = `https://${process.env.VERCEL_URL}`
       } else if (process.env.NODE_ENV === 'development') {
         baseUrl = 'http://localhost:3000'
+      } else {
+        // 构建时且没有可用的URL，返回null（避免连接错误）
+        console.warn('构建时无法获取B站数据：缺少BASE_URL配置，跳过API调用')
+        return null
       }
     }
-    const apiUrl = baseUrl ? `${baseUrl}/api/bilibili-videos` : '/api/bilibili-videos'
+    const apiUrl = `${baseUrl}/api/bilibili-videos`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
@@ -87,16 +93,22 @@ async function getBilibiliVideos() {
 // 获取简书最新文章数据
 async function getJianshuArticles() {
   try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
+    // 在构建时，如果没有可用的URL，直接返回null（避免连接错误）
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     if (!baseUrl) {
-      if (process.env.VERCEL_URL) {
+      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
+      if (process.env.VERCEL && process.env.VERCEL_URL) {
         baseUrl = `https://${process.env.VERCEL_URL}`
       } else if (process.env.NODE_ENV === 'development') {
         baseUrl = 'http://localhost:3000'
+      } else {
+        // 构建时且没有可用的URL，返回null（避免连接错误）
+        console.warn('构建时无法获取简书数据：缺少BASE_URL配置，跳过API调用')
+        return null
       }
     }
-    const apiUrl = baseUrl ? `${baseUrl}/api/jianshu-articles` : '/api/jianshu-articles'
+    const apiUrl = `${baseUrl}/api/jianshu-articles`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
@@ -118,16 +130,22 @@ async function getJianshuArticles() {
 // 获取YouTube最新视频数据
 async function getYouTubeVideos() {
   try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost，Vercel构建时使用相对路径
+    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
+    // 在构建时，如果没有可用的URL，直接返回null（避免连接错误）
     let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     if (!baseUrl) {
-      if (process.env.VERCEL_URL) {
+      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
+      if (process.env.VERCEL && process.env.VERCEL_URL) {
         baseUrl = `https://${process.env.VERCEL_URL}`
       } else if (process.env.NODE_ENV === 'development') {
         baseUrl = 'http://localhost:3000'
+      } else {
+        // 构建时且没有可用的URL，返回null（避免连接错误）
+        console.warn('构建时无法获取YouTube数据：缺少BASE_URL配置，跳过API调用')
+        return null
       }
     }
-    const apiUrl = baseUrl ? `${baseUrl}/api/youtube-videos` : '/api/youtube-videos'
+    const apiUrl = `${baseUrl}/api/youtube-videos`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
