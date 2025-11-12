@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const userId = '472773672' // 您的B站用户ID
   

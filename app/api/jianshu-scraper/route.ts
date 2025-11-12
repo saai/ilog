@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 interface JianshuArticle {
   id: string
   title: string
@@ -462,7 +465,7 @@ async function scrapeUserArticles(uid: string, maxArticles: number = 6): Promise
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const uid = searchParams.get('uid') || '763ffbb1b873' // 默认简书用户ID
     const maxArticles = parseInt(searchParams.get('maxArticles') || '6')
 

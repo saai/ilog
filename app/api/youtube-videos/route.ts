@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const channelHandle = '@saai-saai' // YouTube 频道句柄
   

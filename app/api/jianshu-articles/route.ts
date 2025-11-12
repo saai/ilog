@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const userId = '763ffbb1b873' // 您的简书用户ID
   const userUrl = `https://www.jianshu.com/u/${userId}`

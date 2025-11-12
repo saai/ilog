@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 // 哔哩哔哩API接口
 const BILIBILI_API_BASE = 'https://api.bilibili.com'
 
@@ -89,7 +92,7 @@ async function getVideoInfo(bvid: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const uid = searchParams.get('uid') || '472773672' // 默认使用一个知名UP主的UID - 您可以在这里修改默认UID
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '6')

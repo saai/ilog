@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 interface BilibiliVideo {
   id: string
   title: string
@@ -387,7 +390,7 @@ async function scrapeUserVideos(uid: string, maxVideos: number = 6): Promise<Bil
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const uid = searchParams.get('uid') || '472773672'
     const maxVideos = parseInt(searchParams.get('maxVideos') || '6')
 

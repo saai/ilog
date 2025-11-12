@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { parseStringPromise } from 'xml2js'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   // 直接从豆瓣 RSS 获取数据，不再读取本地文件
   try {
