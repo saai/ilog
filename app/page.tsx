@@ -4,6 +4,9 @@ import ThumbnailImage from '@/components/ThumbnailImage'
 import { transformBilibili, transformJianshu, transformYouTube } from './timeline/transformers'
 import { TimelineItem } from './timeline/types'
 
+// 强制动态生成，避免构建时调用API
+export const dynamic = 'force-dynamic'
+
 // 平台配置
 const platforms = [
   {
@@ -53,7 +56,12 @@ const platforms = [
 // 获取B站最新视频数据
 async function getBilibiliVideos() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/bilibili-videos`, {
+    // 在服务器端，使用相对路径或根据环境变量构建URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    const apiUrl = baseUrl ? `${baseUrl}/api/bilibili-videos` : '/api/bilibili-videos'
+    
+    const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
@@ -73,7 +81,12 @@ async function getBilibiliVideos() {
 // 获取简书最新文章数据
 async function getJianshuArticles() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/jianshu-articles`, {
+    // 在服务器端，使用相对路径或根据环境变量构建URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    const apiUrl = baseUrl ? `${baseUrl}/api/jianshu-articles` : '/api/jianshu-articles'
+    
+    const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
@@ -93,7 +106,12 @@ async function getJianshuArticles() {
 // 获取YouTube最新视频数据
 async function getYouTubeVideos() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/youtube-videos`, {
+    // 在服务器端，使用相对路径或根据环境变量构建URL
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    const apiUrl = baseUrl ? `${baseUrl}/api/youtube-videos` : '/api/youtube-videos'
+    
+    const response = await fetch(apiUrl, {
       cache: 'no-store' // 不缓存，始终获取最新数据
     })
     
