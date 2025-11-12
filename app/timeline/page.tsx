@@ -123,11 +123,14 @@ async function getDoubanRSSData() {
     }
     const apiUrl = `${baseUrl}/api/douban-rss`
     const response = await fetch(apiUrl, {
-      cache: 'no-store'
+      cache: 'no-store',
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
 
     if (!response.ok) {
-      return { success: false, error: '豆瓣RSS API请求失败' }
+      console.warn(`豆瓣RSS API请求失败: ${response.status} ${response.statusText}`)
+      return { success: false, error: `豆瓣RSS API请求失败: ${response.status}` }
     }
 
     const result = await response.json()
@@ -141,9 +144,18 @@ async function getDoubanRSSData() {
       return { success: true, data }
     }
     return { success: false, error: result.error || '豆瓣RSS数据获取失败' }
-  } catch (error) {
-    console.error('获取豆瓣RSS数据失败:', error)
-    return { success: false, error: '获取豆瓣RSS数据失败' }
+  } catch (error: any) {
+    // 静默处理错误，返回错误对象而不是抛出异常
+    if (error.name === 'AbortError') {
+      console.warn('获取豆瓣RSS数据超时')
+      return { success: false, error: '获取豆瓣RSS数据超时' }
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到豆瓣RSS API服务器，跳过豆瓣数据')
+      return { success: false, error: '无法连接到豆瓣RSS API服务器' }
+    } else {
+      console.warn('获取豆瓣RSS数据失败:', error.message || error)
+      return { success: false, error: error.message || '获取豆瓣RSS数据失败' }
+    }
   }
 }
 
@@ -170,11 +182,14 @@ async function getBilibiliData() {
     }
     const apiUrl = `${baseUrl}/api/bilibili-videos`
     const response = await fetch(apiUrl, {
-      cache: 'no-store'
+      cache: 'no-store',
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
 
     if (!response.ok) {
-      return { success: false, error: 'B站API请求失败' }
+      console.warn(`B站API请求失败: ${response.status} ${response.statusText}`)
+      return { success: false, error: `B站API请求失败: ${response.status}` }
     }
 
     const result = await response.json()
@@ -195,9 +210,18 @@ async function getBilibiliData() {
       return { success: true, data }
     }
     return { success: false, error: result.error || 'B站数据获取失败' }
-  } catch (error) {
-    console.error('获取B站数据失败:', error)
-    return { success: false, error: '获取B站数据失败' }
+  } catch (error: any) {
+    // 静默处理错误，返回错误对象而不是抛出异常
+    if (error.name === 'AbortError') {
+      console.warn('获取B站数据超时')
+      return { success: false, error: '获取B站数据超时' }
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到B站API服务器，跳过B站数据')
+      return { success: false, error: '无法连接到B站API服务器' }
+    } else {
+      console.warn('获取B站数据失败:', error.message || error)
+      return { success: false, error: error.message || '获取B站数据失败' }
+    }
   }
 }
 
@@ -270,11 +294,14 @@ async function getYouTubeData() {
     }
     const apiUrl = `${baseUrl}/api/youtube-videos`
     const response = await fetch(apiUrl, {
-      cache: 'no-store'
+      cache: 'no-store',
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
 
     if (!response.ok) {
-      return { success: false, error: 'YouTube API请求失败' }
+      console.warn(`YouTube API请求失败: ${response.status} ${response.statusText}`)
+      return { success: false, error: `YouTube API请求失败: ${response.status}` }
     }
 
     const result = await response.json()
@@ -289,9 +316,18 @@ async function getYouTubeData() {
       return { success: true, data }
     }
     return { success: false, error: result.error || 'YouTube数据获取失败' }
-  } catch (error) {
-    console.error('获取YouTube数据失败:', error)
-    return { success: false, error: '获取YouTube数据失败' }
+  } catch (error: any) {
+    // 静默处理错误，返回错误对象而不是抛出异常
+    if (error.name === 'AbortError') {
+      console.warn('获取YouTube数据超时')
+      return { success: false, error: '获取YouTube数据超时' }
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到YouTube API服务器，跳过YouTube数据')
+      return { success: false, error: '无法连接到YouTube API服务器' }
+    } else {
+      console.warn('获取YouTube数据失败:', error.message || error)
+      return { success: false, error: error.message || '获取YouTube数据失败' }
+    }
   }
 }
 
@@ -365,14 +401,35 @@ async function mergeAndSortData(
 }
 
 export default async function TimelinePage() {
-  // 服务器端获取所有数据
-  const [doubanRSSResult, doubanResult, bilibiliResult, jianshuResult, youtubeResult] = await Promise.all([
+  // 服务器端获取所有数据（使用 allSettled 确保即使某个平台失败，其他平台也能继续）
+  const results = await Promise.allSettled([
     getDoubanRSSData(),
     getDoubanData(),
     getBilibiliData(),
     getJianshuData(),
     getYouTubeData()
   ])
+  
+  // 提取成功的结果
+  const doubanRSSResult = results[0].status === 'fulfilled' ? results[0].value : { success: false, error: '获取失败' }
+  const doubanResult = results[1].status === 'fulfilled' ? results[1].value : { success: false, error: '获取失败' }
+  const bilibiliResult = results[2].status === 'fulfilled' ? results[2].value : { success: false, error: '获取失败' }
+  const jianshuResult = results[3].status === 'fulfilled' ? results[3].value : { success: false, error: '获取失败' }
+  const youtubeResult = results[4].status === 'fulfilled' ? results[4].value : { success: false, error: '获取失败' }
+  
+  // 记录失败的情况（但不阻止其他数据显示）
+  if (results[0].status === 'rejected') {
+    console.error('获取豆瓣RSS数据失败:', results[0].reason)
+  }
+  if (results[2].status === 'rejected') {
+    console.error('获取B站数据失败:', results[2].reason)
+  }
+  if (results[3].status === 'rejected') {
+    console.error('获取简书数据失败:', results[3].reason)
+  }
+  if (results[4].status === 'rejected') {
+    console.error('获取YouTube数据失败:', results[4].reason)
+  }
 
   // 合并并排序数据
   const timelineItems = await mergeAndSortData(

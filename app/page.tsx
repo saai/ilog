@@ -74,18 +74,27 @@ async function getBilibiliVideos() {
     const apiUrl = `${baseUrl}/api/bilibili-videos`
     
     const response = await fetch(apiUrl, {
-      cache: 'no-store' // 不缓存，始终获取最新数据
+      cache: 'no-store', // 不缓存，始终获取最新数据
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
     
     if (!response.ok) {
-      console.error('B站API请求失败:', response.status)
+      console.warn(`B站API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
     return data
-  } catch (error) {
-    console.error('获取B站视频数据失败:', error)
+  } catch (error: any) {
+    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    if (error.name === 'AbortError') {
+      console.warn('获取B站数据超时')
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到B站API服务器，跳过B站数据')
+    } else {
+      console.warn('获取B站视频数据失败:', error.message || error)
+    }
     return null
   }
 }
@@ -111,18 +120,27 @@ async function getJianshuArticles() {
     const apiUrl = `${baseUrl}/api/jianshu-articles`
     
     const response = await fetch(apiUrl, {
-      cache: 'no-store' // 不缓存，始终获取最新数据
+      cache: 'no-store', // 不缓存，始终获取最新数据
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
     
     if (!response.ok) {
-      console.error('简书API请求失败:', response.status)
+      console.warn(`简书API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
     return data
-  } catch (error) {
-    console.error('获取简书文章数据失败:', error)
+  } catch (error: any) {
+    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    if (error.name === 'AbortError') {
+      console.warn('获取简书数据超时')
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到简书API服务器，跳过简书数据')
+    } else {
+      console.warn('获取简书文章数据失败:', error.message || error)
+    }
     return null
   }
 }
@@ -148,29 +166,54 @@ async function getYouTubeVideos() {
     const apiUrl = `${baseUrl}/api/youtube-videos`
     
     const response = await fetch(apiUrl, {
-      cache: 'no-store' // 不缓存，始终获取最新数据
+      cache: 'no-store', // 不缓存，始终获取最新数据
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
     
     if (!response.ok) {
-      console.error('YouTube API请求失败:', response.status)
+      console.warn(`YouTube API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
     return data
-  } catch (error) {
-    console.error('获取YouTube视频数据失败:', error)
+  } catch (error: any) {
+    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    if (error.name === 'AbortError') {
+      console.warn('获取YouTube数据超时')
+    } else if (error.code === 'ECONNREFUSED') {
+      console.warn('无法连接到YouTube API服务器，跳过YouTube数据')
+    } else {
+      console.warn('获取YouTube视频数据失败:', error.message || error)
+    }
     return null
   }
 }
 
 export default async function HomePage() {
-  // 获取所有平台数据
-  const [bilibiliData, jianshuData, youtubeData] = await Promise.all([
+  // 获取所有平台数据（使用 allSettled 确保即使某个平台失败，其他平台也能继续）
+  const results = await Promise.allSettled([
     getBilibiliVideos(),
     getJianshuArticles(),
     getYouTubeVideos()
   ])
+  
+  // 提取成功的结果
+  const bilibiliData = results[0].status === 'fulfilled' ? results[0].value : null
+  const jianshuData = results[1].status === 'fulfilled' ? results[1].value : null
+  const youtubeData = results[2].status === 'fulfilled' ? results[2].value : null
+  
+  // 记录失败的情况（但不阻止其他数据显示）
+  if (results[0].status === 'rejected') {
+    console.error('获取B站数据失败:', results[0].reason)
+  }
+  if (results[1].status === 'rejected') {
+    console.error('获取简书数据失败:', results[1].reason)
+  }
+  if (results[2].status === 'rejected') {
+    console.error('获取YouTube数据失败:', results[2].reason)
+  }
 
   // 获取每个平台的最新一条数据（不合并排序）
   const latestItems: TimelineItem[] = []
