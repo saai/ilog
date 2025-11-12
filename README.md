@@ -118,6 +118,102 @@ chmod +x run.sh
 - **爬虫**: Python 3.9+, Selenium, ChromeDriver（可选，用于本地备份）
 - **部署**: Vercel (推荐)
 
+## 🚀 Vercel 部署指南
+
+### 方式一：通过 Vercel Dashboard（推荐）
+
+1. **登录 Vercel**
+   - 访问 [vercel.com](https://vercel.com)
+   - 使用 GitHub 账号登录
+
+2. **导入项目**
+   - 点击 "Add New Project"
+   - 选择 GitHub 仓库 `saai/ilog`
+   - 如果项目已存在，进入项目设置
+
+3. **配置部署**
+   - **Framework Preset**: Next.js（自动检测）
+   - **Root Directory**: `./`（默认）
+   - **Build Command**: `npm run build`（自动检测）
+   - **Output Directory**: `.next`（自动检测）
+   - **Install Command**: `npm install`（自动检测）
+
+4. **选择分支**
+   - 在项目设置中，确保 Production Branch 设置为 `main`
+   - 每次推送到 `main` 分支时，Vercel 会自动部署
+
+5. **手动触发部署**
+   - 进入项目 Dashboard
+   - 点击 "Deployments" 标签
+   - 点击 "Redeploy" 按钮
+   - 选择 `main` 分支
+   - 点击 "Redeploy" 确认
+
+### 方式二：使用 Vercel CLI
+
+1. **安装 Vercel CLI**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **登录 Vercel**
+   ```bash
+   vercel login
+   ```
+
+3. **部署到生产环境**
+   ```bash
+   # 确保在 main 分支
+   git checkout main
+   
+   # 部署到生产环境
+   vercel --prod
+   ```
+
+4. **查看部署状态**
+   ```bash
+   vercel ls
+   ```
+
+### 自动部署
+
+项目已配置为自动部署：
+- ✅ 每次推送到 `main` 分支时，Vercel 会自动触发部署
+- ✅ 部署状态会显示在 GitHub 的 Pull Request 中
+- ✅ 部署完成后会生成预览 URL
+
+### 环境变量配置（如需要）
+
+如果项目需要环境变量，在 Vercel Dashboard 中配置：
+1. 进入项目 Settings
+2. 选择 Environment Variables
+3. 添加所需的环境变量（如 `NEXT_PUBLIC_BASE_URL` 等）
+
+### 部署检查清单
+
+部署前确保：
+- ✅ 代码已推送到 GitHub 的 `main` 分支
+- ✅ `package.json` 中的构建脚本正确
+- ✅ 所有 API 路由使用 `export const dynamic = 'force-dynamic'`（已配置）
+- ✅ 没有硬编码的本地文件路径
+- ✅ 所有依赖项都在 `package.json` 中声明
+
+### 查看部署日志
+
+如果部署失败：
+1. 在 Vercel Dashboard 中查看部署日志
+2. 检查构建错误信息
+3. 确保所有 API 路由正确配置
+4. 检查网络请求是否正常（API 调用）
+
+### 回滚部署
+
+如果需要回滚到之前的版本：
+1. 在 Vercel Dashboard 的 Deployments 页面
+2. 找到之前的成功部署
+3. 点击 "..." 菜单
+4. 选择 "Promote to Production"
+
 ## 📊 数据流程
 
 1. **API调用**: Next.js API路由直接从各平台在线API获取数据
