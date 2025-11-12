@@ -5,9 +5,9 @@
 ## 🌟 功能特性
 
 - **多平台内容聚合**: 自动获取并展示来自 YouTube、B站、简书、豆瓣等平台的最新内容
-- **本地数据缓存**: 使用 Python 爬虫每日更新数据，减少 API 调用频率
+- **实时数据获取**: 所有数据直接从在线API实时获取，无需本地文件缓存
 - **响应式设计**: 现代化的艺术风格界面，支持各种设备
-- **实时数据更新**: 首页和时间流页面展示最新的创作内容
+- **动态内容更新**: 首页和时间流页面实时展示最新的创作内容
 
 ## 📁 项目结构
 
@@ -45,11 +45,11 @@ npm run dev
 
 ## 🕷️ 爬虫项目
 
-项目包含三个独立的 Python 爬虫项目，用于每日更新各平台数据：
+项目包含独立的 Python 爬虫项目，可用于本地数据备份（可选）：
 
 ### 简书爬虫 (jianshu-spider)
 
-获取简书用户的最新文章。
+获取简书用户的最新文章（可选，用于本地备份）。
 
 ```bash
 cd jianshu-spider
@@ -59,7 +59,7 @@ chmod +x run.sh
 
 ### B站爬虫 (bilibili-spider)
 
-获取B站用户的最新视频。
+获取B站用户的最新视频（可选，用于本地备份）。
 
 ```bash
 cd bilibili-spider
@@ -71,62 +71,49 @@ chmod +x run.sh
 
 通过豆瓣RSS获取用户的最新收藏（书籍、电影等）。
 
-**注意**: 豆瓣RSS抓取器已集成到 `update_data.sh` 脚本中，无需单独执行。运行 `./update_data.sh` 时会自动调用。
-
-## 📅 数据更新
-
-### 手动更新
-
-运行所有爬虫更新数据：
-
-```bash
-chmod +x update_data.sh
-./update_data.sh
-```
-
-### 自动更新（推荐）
-
-设置定时任务每日自动更新数据：
-
-```bash
-# 编辑 crontab
-crontab -e
-
-# 添加以下行（每天凌晨2点更新）
-0 2 * * * cd /Users/yansha/Documents/iLog && ./update_data.sh
-```
+**注意**: 所有数据现在直接从在线API实时获取，爬虫项目仅用于本地数据备份（可选）。
 
 ## 🔧 配置说明
 
 ### 用户ID配置
 
-在各个爬虫项目中修改用户ID：
+在API路由中配置用户ID（主要配置）：
 
-- **简书**: `jianshu-spider/fetch_jianshu.py` 中的 `user_id`
-- **B站**: `bilibili-spider/fetch_bilibili.py` 中的 `user_id`
-- **豆瓣**: `douban-rss-fetcher/fetch_douban_rss.py` 中的 `user_id`
+- **简书**: `app/api/jianshu-articles/route.ts` 中的 `userId` (默认: `763ffbb1b873`)
+- **B站**: `app/api/bilibili-videos/route.ts` 中的 `userId` (默认: `472773672`)
+- **豆瓣**: `app/api/douban-rss/route.ts` 中的 `userId` (默认: `284853052`)
+- **YouTube**: `app/api/youtube-videos/route.ts` 中的 `channelId` (默认: `UCvvqt72J5jXW3TVoCJmVTlA`)
+
+**注意**: 爬虫项目中的用户ID配置仅用于本地备份（可选），实际数据获取使用API路由中的配置。
 
 ### API路由配置
 
-API路由会自动读取本地JSON文件，如果文件不存在则尝试在线API：
+所有API路由直接从在线API实时获取数据，不再读取本地JSON文件：
 
-- `/api/jianshu-articles` - 读取 `jianshu-spider/jianshu_articles.json`
-- `/api/bilibili-videos` - 读取 `bilibili-spider/bilibili_videos.json`
-- `/api/douban-rss` - 读取 `douban-rss-fetcher/douban_rss_data.json` 或 `douban_rss_data.json`
+- `/api/jianshu-articles` - 从简书用户页面实时抓取文章数据
+- `/api/bilibili-videos` - 从B站API实时获取视频数据
+- `/api/douban-rss` - 从豆瓣RSS feed实时获取收藏数据
+- `/api/youtube-videos` - 从YouTube RSS feed实时获取视频数据
 
 ## 🛠️ 技术栈
 
 - **前端**: Next.js 14, React, TypeScript, Tailwind CSS
-- **爬虫**: Python 3.9+, Selenium, ChromeDriver
-- **数据存储**: 本地JSON文件
+- **数据获取**: 实时API调用，直接从各平台获取最新数据
+- **爬虫**: Python 3.9+, Selenium, ChromeDriver（可选，用于本地备份）
 - **部署**: Vercel (推荐)
 
 ## 📊 数据流程
 
-1. **爬虫执行**: Python爬虫每日运行，获取最新数据
-2. **本地存储**: 数据保存为JSON文件
-3. **API读取**: Next.js API路由优先读取本地文件
-4. **页面展示**: 首页和时间流页面展示最新内容
+1. **API调用**: Next.js API路由直接从各平台在线API获取数据
+2. **实时获取**: 
+   - B站：通过官方API获取视频列表
+   - 简书：从用户页面HTML解析文章信息
+   - 豆瓣：从RSS feed获取收藏数据
+   - YouTube：从RSS feed获取视频数据
+3. **数据转换**: 将各平台数据转换为统一的TimelineItem格式
+4. **页面展示**: 首页和时间流页面实时展示最新内容
+
+**注意**: 不再依赖本地JSON文件，所有数据实时获取，确保内容始终是最新的。
 
 ## 🔍 故障排除
 
@@ -138,17 +125,20 @@ API路由会自动读取本地JSON文件，如果文件不存在则尝试在线A
 
 ### API问题
 
-1. **数据不更新**: 检查JSON文件是否存在，运行爬虫更新数据
-2. **页面显示旧数据**: 清除浏览器缓存或重启开发服务器
+1. **数据获取失败**: 检查网络连接，API会自动重试或返回备用数据
+2. **页面显示旧数据**: 清除浏览器缓存，数据是实时获取的
+3. **API限流**: 如果遇到频率限制，API会使用缓存机制（30分钟缓存）
 
 ## 📝 开发说明
 
 ### 添加新平台
 
-1. 创建新的爬虫项目
-2. 实现数据获取逻辑
-3. 创建对应的API路由
-4. 更新前端页面展示
+1. 创建对应的API路由（`app/api/{platform-name}/route.ts`）
+2. 实现从在线API获取数据的逻辑
+3. 在 `app/timeline/transformers.ts` 中添加数据转换函数
+4. 更新前端页面（`app/page.tsx` 和 `app/timeline/page.tsx`）展示新平台内容
+
+**注意**: 现在不再需要创建本地爬虫项目，所有数据直接从在线API获取。
 
 ### 自定义样式
 
