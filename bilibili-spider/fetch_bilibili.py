@@ -545,13 +545,17 @@ class BilibiliSpider:
                         except:
                             continue
                     
+                    # 过滤：如果 url 为空，跳过这条数据（必须要有可点击的链接）
+                    if not video_url or video_url.strip() == "":
+                        logger.info(f"跳过无链接视频: {title[:30]}... (url为空)")
+                        continue
+                    
                     # 去重：如果URL已存在，跳过
-                    if video_url and video_url in seen_urls:
+                    if video_url in seen_urls:
                         logger.info(f"跳过重复视频: {title[:30]}...")
                         continue
                     
-                    if video_url:
-                        seen_urls.add(video_url)
+                    seen_urls.add(video_url)
                     
                     video_data = {
                         "title": title.strip(),
@@ -564,7 +568,7 @@ class BilibiliSpider:
                     }
                     
                     videos.append(video_data)
-                    logger.info(f"获取视频 {len(videos)}: {title[:30]}...")
+                    logger.info(f"获取视频 {len(videos)}: {title[:30]}... (封面: {cover_url[:50] if cover_url else 'N/A'})")
                     
                 except Exception as e:
                     logger.warning(f"解析视频 {i+1} 失败: {e}")

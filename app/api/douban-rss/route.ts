@@ -1,29 +1,8 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
 import { parseStringPromise } from 'xml2js'
 
 export async function GET() {
-  // 首先尝试读取本地JSON文件
-  const possiblePaths = [
-    path.join(process.cwd(), 'douban_rss_data.json'),
-    path.join(process.cwd(), 'douban-rss-fetcher', 'douban_rss_data.json'),
-    path.join(process.cwd(), 'douban-rss.json')
-  ]
-  
-  for (const jsonPath of possiblePaths) {
-    try {
-      if (fs.existsSync(jsonPath)) {
-        const jsonData = fs.readFileSync(jsonPath, 'utf-8')
-        const data = JSON.parse(jsonData)
-        return NextResponse.json({ success: true, data })
-      }
-    } catch (error) {
-      console.error(`读取文件失败 ${jsonPath}:`, error)
-    }
-  }
-  
-  // 如果本地文件不存在，尝试直接从豆瓣 RSS 获取
+  // 直接从豆瓣 RSS 获取数据，不再读取本地文件
   try {
     const userId = '284853052'
     const rssUrl = `https://www.douban.com/feed/people/${userId}/interests`
@@ -81,15 +60,30 @@ export async function GET() {
             return dateB - dateA
           })
 
+        // 转换为 timeline 期望的格式
+        const collections = interests.map((item: any) => ({
+          title: item.title,
+          url: item.url,
+          type: item.type,
+          rating: item.rating,
+          author: '', // RSS 中没有作者信息
+          published: item.published || item.published_at || item.created_at,
+          formattedDate: '', // 将在 timeline 中格式化
+          description: item.description
+        }))
+
         return NextResponse.json({
           success: true,
           data: {
-            interests,
-            total: interests.length,
+            collections,
+            interests, // 保持向后兼容
+            total: collections.length,
             user: {
               id: userId,
-              name: channel.title?.[0] || 'Saai'
-            }
+              nickname: channel.title?.[0] || 'Saai',
+              name: channel.title?.[0] || 'Saai' // 保持向后兼容
+            },
+            fetched_at: new Date().toISOString()
           }
         })
       }

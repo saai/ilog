@@ -216,10 +216,18 @@ export function transformJianshu(
   index: number
 ): TimelineItem | null {
   // 只处理有实际发布时间的文章
-  if (!item.published_at) return null
+  // 支持 published_at 或 published 字段
+  const publishedAt = item.published_at || (item as any).published
+  if (!publishedAt) {
+    console.warn('简书文章缺少发布时间:', item.title, item)
+    return null
+  }
   
-  const date = new Date(item.published_at)
-  if (isNaN(date.getTime())) return null
+  const date = new Date(publishedAt)
+  if (isNaN(date.getTime())) {
+    console.warn('简书文章发布时间格式错误:', publishedAt, item.title)
+    return null
+  }
   
   const config = PLATFORM_CONFIG['jianshu']
   
@@ -254,10 +262,18 @@ export function transformBilibili(
   index: number
 ): TimelineItem | null {
   // 只处理有实际发布时间的视频
-  if (!item.published_at) return null
+  // 支持 published_at 或 published 字段
+  const publishedAt = item.published_at || (item as any).published
+  if (!publishedAt) {
+    console.warn('B站视频缺少发布时间:', item.title, item)
+    return null
+  }
   
-  const date = new Date(item.published_at)
-  if (isNaN(date.getTime())) return null
+  const date = new Date(publishedAt)
+  if (isNaN(date.getTime())) {
+    console.warn('B站视频发布时间格式错误:', publishedAt, item.title)
+    return null
+  }
   
   const config = PLATFORM_CONFIG['bilibili']
   

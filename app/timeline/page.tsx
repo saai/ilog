@@ -100,22 +100,21 @@ interface YouTubeData {
   videos: YouTubeVideo[]
 }
 
-// 服务器端数据获取函数 - 通过API路由获取数据（支持Vercel部署）
+// 服务器端数据获取函数 - 通过 API 路由获取数据
 async function getDoubanRSSData() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const response = await fetch(`${baseUrl}/api/douban-rss`, {
       cache: 'no-store'
     })
-    
+
     if (!response.ok) {
       return { success: false, error: '豆瓣RSS API请求失败' }
     }
-    
+
     const result = await response.json()
     if (result.success && result.data) {
-      // 转换数据格式以匹配 DoubanRSSData 接口
       const data: DoubanRSSData = {
         collections: result.data.collections || result.data.interests || [],
         total: result.data.total || 0,
@@ -132,30 +131,35 @@ async function getDoubanRSSData() {
 }
 
 async function getDoubanData(): Promise<{ success: false; error: string }> {
-  // 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
-  // 收藏数据现在通过豆瓣RSS获取（见 getDoubanRSSData）
   return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
 }
 
 async function getBilibiliData() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const response = await fetch(`${baseUrl}/api/bilibili-videos`, {
       cache: 'no-store'
     })
-    
+
     if (!response.ok) {
       return { success: false, error: 'B站API请求失败' }
     }
-    
+
     const result = await response.json()
     if (result.success && result.data) {
+      // 确保每个视频都有 published_at 字段
+      const videos = (result.data.videos || []).map((video: any) => ({
+        ...video,
+        published_at: video.published_at || video.published || null,
+        fetched_at: video.fetched_at || new Date().toISOString()
+      }))
+      
       const data: BilibiliData = {
         user_id: result.data.user?.id || '',
-        total_videos: result.data.total || result.data.videos?.length || 0,
+        total_videos: videos.length,
         fetched_at: new Date().toISOString(),
-        videos: result.data.videos || []
+        videos: videos
       }
       return { success: true, data }
     }
@@ -168,23 +172,30 @@ async function getBilibiliData() {
 
 async function getJianshuData() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const response = await fetch(`${baseUrl}/api/jianshu-articles`, {
       cache: 'no-store'
     })
-    
+
     if (!response.ok) {
       return { success: false, error: '简书API请求失败' }
     }
-    
+
     const result = await response.json()
     if (result.success && result.data) {
+      // 确保每个文章都有 published_at 字段
+      const articles = (result.data.articles || []).map((article: any) => ({
+        ...article,
+        published_at: article.published_at || article.published || null,
+        fetched_at: article.fetched_at || new Date().toISOString()
+      }))
+      
       const data: JianshuData = {
         user_id: result.data.user?.id || '',
-        total_articles: result.data.total || result.data.articles?.length || 0,
+        total_articles: articles.length,
         fetched_at: new Date().toISOString(),
-        articles: result.data.articles || []
+        articles: articles
       }
       return { success: true, data }
     }
@@ -197,22 +208,22 @@ async function getJianshuData() {
 
 async function getYouTubeData() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const response = await fetch(`${baseUrl}/api/youtube-videos`, {
       cache: 'no-store'
     })
-    
+
     if (!response.ok) {
       return { success: false, error: 'YouTube API请求失败' }
     }
-    
+
     const result = await response.json()
     if (result.success && result.data) {
       const data: YouTubeData = {
-        channel_handle: result.data.user?.handle || result.data.channel_handle || '',
-        channel_name: result.data.user?.name || result.data.channel_name || '',
-        total_videos: result.data.total || result.data.videos?.length || 0,
+        channel_handle: result.data.channel?.handle || '',
+        channel_name: result.data.channel?.name || '',
+        total_videos: result.data.total || 0,
         fetched_at: new Date().toISOString(),
         videos: result.data.videos || []
       }
@@ -258,18 +269,28 @@ async function mergeAndSortData(
         article.title !== "0" && 
         !article.link.includes("#comments")
       )
+      .map((article: JianshuArticle) => ({
+        ...article,
+        // 确保 published_at 存在，如果不存在则使用 published
+        published_at: article.published_at || (article as any).published || null
+      }))
+      .filter((article: JianshuArticle) => article.published_at !== null)
       .forEach((article: JianshuArticle, index: number) => {
         const transformed = transformJianshu(article, index)
         if (transformed) items.push(transformed)
       })
   }
 
-  // 转换B站视频数据
+  // 转换B站视频数据（只处理有url的视频）
   if (bilibiliData) {
-    bilibiliData.videos.forEach((video: BilibiliVideo, index: number) => {
-      const transformed = transformBilibili(video, index)
-      if (transformed) items.push(transformed)
-    })
+    bilibiliData.videos
+      .filter((video: BilibiliVideo) => 
+        video.url && video.url.trim() !== ''
+      )
+      .forEach((video: BilibiliVideo, index: number) => {
+        const transformed = transformBilibili(video, index)
+        if (transformed) items.push(transformed)
+      })
   }
 
   // 转换YouTube视频数据
@@ -297,7 +318,7 @@ export default async function TimelinePage() {
   // 合并并排序数据
   const timelineItems = await mergeAndSortData(
     doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null,
-    null, // doubanResult 总是返回失败，直接传递 null
+    null, // doubanResult always returns failure, pass null directly
     bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null,
     jianshuResult.success && jianshuResult.data ? jianshuResult.data : null,
     youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
