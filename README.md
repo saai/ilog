@@ -197,20 +197,84 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 #### Vercel 部署环境
 
-在 Vercel Dashboard 中配置环境变量：
+在 Vercel Dashboard 中配置环境变量的详细步骤：
 
-1. 登录 [Vercel Dashboard](https://vercel.com/dashboard)
-2. 选择你的项目
-3. 进入 **Settings** → **Environment Variables**
-4. 添加环境变量：
-   - **Name**: `NEXT_PUBLIC_BASE_URL`
-   - **Value**: 你的 Vercel 部署 URL（例如：`https://your-project.vercel.app`）
-   - **Environment**: 选择 `Production`、`Preview` 和 `Development`（根据需要）
+##### 方法一：通过 Vercel Dashboard（推荐）
 
-**注意**：
-- 在 Vercel 上，如果不设置 `NEXT_PUBLIC_BASE_URL`，代码会自动使用 `VERCEL_URL` 环境变量（Vercel 自动提供）
-- 所以对于 Vercel 部署，`NEXT_PUBLIC_BASE_URL` 通常也是可选的
-- 只有在需要自定义基础 URL 时才需要设置
+1. **登录 Vercel Dashboard**
+   - 访问 [https://vercel.com/dashboard](https://vercel.com/dashboard)
+   - 使用 GitHub 账号登录
+
+2. **选择项目**
+   - 在 Dashboard 中找到并点击你的项目（例如：`ilog`）
+
+3. **进入设置页面**
+   - 点击项目页面顶部的 **Settings** 标签
+   - 在左侧菜单中找到并点击 **Environment Variables**
+
+4. **添加环境变量**
+   - 点击 **Add New** 按钮
+   - 填写以下信息：
+     - **Key（变量名）**: `NEXT_PUBLIC_BASE_URL`
+     - **Value（变量值）**: 你的 Vercel 部署 URL
+       - 生产环境：`https://your-project.vercel.app`（替换为你的实际域名）
+       - 或者使用 Vercel 自动生成的 URL
+     - **Environment（环境）**: 勾选需要应用的环境
+       - ✅ **Production** - 生产环境（必须）
+       - ✅ **Preview** - 预览环境（推荐）
+       - ✅ **Development** - 开发环境（可选）
+
+5. **保存设置**
+   - 点击 **Save** 按钮
+   - 环境变量会立即生效，但需要重新部署才能应用
+
+6. **重新部署（应用环境变量）**
+   - 方法一：在 **Deployments** 页面，找到最新的部署，点击右侧的 **...** 菜单，选择 **Redeploy**
+   - 方法二：推送新的代码到 GitHub，Vercel 会自动触发部署
+
+##### 方法二：通过 Vercel CLI
+
+如果你安装了 Vercel CLI，也可以通过命令行设置：
+
+```bash
+# 安装 Vercel CLI（如果还没有安装）
+npm i -g vercel
+
+# 登录 Vercel
+vercel login
+
+# 设置环境变量
+vercel env add NEXT_PUBLIC_BASE_URL production
+# 然后输入变量值，例如：https://your-project.vercel.app
+
+# 也可以为其他环境设置
+vercel env add NEXT_PUBLIC_BASE_URL preview
+vercel env add NEXT_PUBLIC_BASE_URL development
+```
+
+##### 重要提示
+
+1. **环境变量命名规则**
+   - 客户端可访问的变量必须以 `NEXT_PUBLIC_` 开头
+   - 服务器端变量不需要前缀
+
+2. **环境变量作用域**
+   - **Production**: 仅在生产环境（主分支）生效
+   - **Preview**: 在所有预览部署（Pull Request、分支部署）生效
+   - **Development**: 仅在本地开发时使用 `vercel dev` 命令时生效
+
+3. **自动环境变量**
+   - Vercel 自动提供 `VERCEL_URL` 环境变量
+   - 代码已配置为自动使用 `VERCEL_URL`，所以 `NEXT_PUBLIC_BASE_URL` 通常是**可选的**
+   - 只有在需要自定义基础 URL 时才需要设置
+
+4. **查看环境变量**
+   - 在 **Settings** → **Environment Variables** 页面可以查看所有已设置的环境变量
+   - 可以随时编辑或删除环境变量
+
+5. **环境变量生效时间**
+   - 添加或修改环境变量后，需要重新部署才能生效
+   - 环境变量不会自动应用到已存在的部署
 
 ### 部署检查清单
 
