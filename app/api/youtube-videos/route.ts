@@ -1,57 +1,14 @@
 import { NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
-import path from 'path'
 
 export async function GET() {
   const channelHandle = '@saai-saai' // YouTube 频道句柄
   
-  // 首先尝试读取本地Python脚本生成的JSON文件
+  // 直接从 YouTube RSS feed 获取数据，不再读取本地文件
   try {
-    const jsonPath = path.join(process.cwd(), 'youtube-spider', 'youtube_videos.json')
-    const fileContent = await fs.readFile(jsonPath, 'utf-8')
-    const data = JSON.parse(fileContent)
-    
-    console.log('成功读取本地YouTube视频数据')
-    
-    // 转换数据格式以匹配现有接口
-    const videos = data.videos
-      .map((video: any) => ({
-        title: video.title,
-        url: video.url,
-        video_id: video.video_id,
-        published_at: video.published_at,
-        description: video.description,
-        thumbnail_url: video.thumbnail_url,
-        channel_name: video.channel_name,
-        published: video.published_at,
-        formattedDate: formatDate(video.published_at)
-      }))
-      // 按发布时间倒序排序（最新的在前）
-      .sort((a: any, b: any) => {
-        const dateA = new Date(a.published_at || a.published).getTime()
-        const dateB = new Date(b.published_at || b.published).getTime()
-        return dateB - dateA
-      })
-    
-    return NextResponse.json({
-      success: true,
-      data: {
-        videos,
-        total: videos.length,
-        channel: {
-          handle: channelHandle,
-          name: data.channel_name || 'Saai'
-        }
-      }
-    })
-  } catch (error) {
-    console.log('本地JSON文件不存在或读取失败:', error)
-  }
-  
-  // 如果本地文件不存在，尝试使用 YouTube RSS feed 作为备用方案
-  try {
-    // 尝试通过 RSS feed 获取数据
-    const rssUrl = `https://www.youtube.com/feeds/videos.xml?user=${channelHandle.replace('@', '')}`
+    // 尝试通过 RSS feed 获取数据（使用 channel_id）
+    // 注意：需要先获取 channel_id，这里使用已知的 channel_id
+    const channelId = 'UCvvqt72J5jXW3TVoCJmVTlA' // @saai-saai 的 channel_id
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
     
     const response = await fetch(rssUrl, {
       headers: {

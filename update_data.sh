@@ -1,80 +1,11 @@
 #!/bin/bash
 
-echo "🔄 开始每日数据更新任务..."
-echo "📅 更新时间: $(date)"
-
-# 设置工作目录
-cd "$(dirname "$0")"
-
-# 更新豆瓣RSS数据 (Python版本)
-echo "🌱 更新豆瓣RSS数据 (Python)..."
-cd douban-rss-fetcher
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh
-    # 复制生成的JSON文件到项目根目录
-    if [ -f "douban_rss_data.json" ]; then
-        cp douban_rss_data.json ../
-        echo "✅ 豆瓣RSS数据已复制到项目根目录"
-    fi
-else
-    echo "❌ 豆瓣RSS抓取脚本不存在"
-fi
-cd ..
-
-# 豆瓣RSS数据已通过Python版本获取（见上面的douban-rss-fetcher部分）
-# Node.js版本已不再使用，避免重复抓取
-# echo "🌱 更新豆瓣RSS数据 (Node.js，备用)..."
-# if [ -f "fetch_douban_rss.js" ]; then
-#     node fetch_douban_rss.js
-# else
-#     echo "❌ Node.js豆瓣RSS抓取脚本不存在"
-# fi
-
-# 更新简书数据
-echo "📝 更新简书文章数据..."
-cd jianshu-spider
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh
-else
-    echo "❌ 简书爬虫脚本不存在"
-fi
-cd ..
-
-# 更新B站数据
-echo "📱 更新B站视频数据..."
-cd bilibili-spider
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh
-else
-    echo "❌ B站爬虫脚本不存在"
-fi
-cd ..
-
-# 豆瓣Spider已改为Subject详细信息获取工具，不再用于自动抓取收藏数据
-# 收藏数据现在通过豆瓣RSS获取（见上面的douban-rss-fetcher部分）
-# echo "📚 更新豆瓣收藏数据..."
-# cd douban-spider
-# if [ -f "run.sh" ]; then
-#     chmod +x run.sh
-#     ./run.sh
-# else
-#     echo "❌ 豆瓣爬虫脚本不存在"
-# fi
-# cd ..
-
-# 更新YouTube数据
-echo "📺 更新YouTube视频数据..."
-cd youtube-spider
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh
-else
-    echo "❌ YouTube爬虫脚本不存在"
-fi
-cd ..
-
-echo "✅ 每日数据更新任务完成！"
-echo "�� 数据更新时间: $(date)" 
+echo "ℹ️  数据更新脚本已禁用"
+echo "📅 当前时间: $(date)"
+echo ""
+echo "说明："
+echo "  - 网页现在直接从在线 API 获取数据，不再依赖本地 JSON 文件"
+echo "  - 所有爬虫脚本已停止运行，不再更新本地 JSON 数据"
+echo "  - 如需手动运行爬虫，请直接进入对应的爬虫目录执行 run.sh"
+echo ""
+echo "✅ 脚本执行完成（无操作）"

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "chmod +x update_data.sh && ./update_data.sh || true",
+    "predev": "echo '跳过数据更新，直接启动服务器'",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

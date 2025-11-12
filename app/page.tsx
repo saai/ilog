@@ -1,7 +1,7 @@
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import ThumbnailImage from '@/components/ThumbnailImage'
-import { transformBilibili, transformJianshu, transformYouTube, mergeAndSortTimelineItems } from './timeline/transformers'
+import { transformBilibili, transformJianshu, transformYouTube } from './timeline/transformers'
 import { TimelineItem } from './timeline/types'
 
 // 平台配置
@@ -118,65 +118,83 @@ export default async function HomePage() {
     getYouTubeVideos()
   ])
 
-  // 转换为统一的时间流格式并合并排序
-  const timelineItems: TimelineItem[] = []
+  // 获取每个平台的最新一条数据（不合并排序）
+  const latestItems: TimelineItem[] = []
 
-  // 转换B站视频数据
-  if (bilibiliData?.success && bilibiliData.data?.videos) {
-    bilibiliData.data.videos.forEach((video: any, index: number) => {
-      const transformed = transformBilibili({
-        title: video.title,
-        url: video.url,
-        publish_time: video.publish_time || '',
-        published_at: video.published_at || null,
-        play_count: video.play_count || '0',
-        cover_url: video.cover_url || '',
-        formattedDate: video.formattedDate,
-        fetched_at: video.fetched_at || new Date().toISOString()
-      }, index)
-      if (transformed) timelineItems.push(transformed)
-    })
+  // 获取B站最新一条视频（只返回有url的视频）
+  if (bilibiliData?.success && bilibiliData.data?.videos && bilibiliData.data.videos.length > 0) {
+    // 过滤出有 url 的视频
+    const videosWithUrl = bilibiliData.data.videos.filter((video: any) => 
+      video.url && video.url.trim() !== ''
+    )
+    
+    if (videosWithUrl.length > 0) {
+      const latestVideo = videosWithUrl[0] // 第一条就是最新的（API已排序）
+      // 确保 published_at 存在，如果不存在则使用 published
+      const publishedAt = latestVideo.published_at || latestVideo.published || null
+      if (publishedAt) {
+        const transformed = transformBilibili({
+          title: latestVideo.title,
+          url: latestVideo.url,
+          publish_time: latestVideo.publish_time || '',
+          published_at: publishedAt,
+          play_count: latestVideo.play_count || '0',
+          cover_url: latestVideo.cover_url || '',
+          formattedDate: latestVideo.formattedDate,
+          fetched_at: latestVideo.fetched_at || new Date().toISOString()
+        }, 0)
+        if (transformed) latestItems.push(transformed)
+      }
+    }
   }
 
-  // 转换简书文章数据
-  if (jianshuData?.success && jianshuData.data?.articles) {
-    jianshuData.data.articles.forEach((article: any, index: number) => {
+  // 获取简书最新一篇文章
+  if (jianshuData?.success && jianshuData.data?.articles && jianshuData.data.articles.length > 0) {
+    const latestArticle = jianshuData.data.articles[0] // 第一条就是最新的（API已排序）
+    // 确保 published_at 存在，如果不存在则使用 published
+    const publishedAt = latestArticle.published_at || latestArticle.published || null
+    if (publishedAt) {
       const transformed = transformJianshu({
-        title: article.title,
-        link: article.link,
-        slug: article.slug || '',
-        published_at: article.published_at || null,
-        fetched_at: article.fetched_at || new Date().toISOString(),
-        formattedDate: article.formattedDate,
-        user_id: article.user_id || ''
-      }, index)
-      if (transformed) timelineItems.push(transformed)
-    })
+        title: latestArticle.title,
+        link: latestArticle.link,
+        slug: latestArticle.slug || '',
+        published_at: publishedAt,
+        fetched_at: latestArticle.fetched_at || new Date().toISOString(),
+        formattedDate: latestArticle.formattedDate,
+        user_id: latestArticle.user_id || ''
+      }, 0)
+      if (transformed) latestItems.push(transformed)
+    }
   }
 
-  // 转换YouTube视频数据
-  if (youtubeData?.success && youtubeData.data?.videos) {
-    youtubeData.data.videos.forEach((video: any, index: number) => {
-      const transformed = transformYouTube({
-        video_id: video.video_id || '',
-        title: video.title,
-        url: video.url,
-        published_at: video.published_at || '',
-        description: video.description,
-        thumbnail_url: video.thumbnail_url,
-        channel_name: video.channel_name,
-        formattedDate: video.formattedDate,
-        fetched_at: video.fetched_at || new Date().toISOString()
-      }, index)
-      if (transformed) timelineItems.push(transformed)
-    })
+  // 获取YouTube最新一条视频
+  if (youtubeData?.success && youtubeData.data?.videos && youtubeData.data.videos.length > 0) {
+    const latestYouTubeVideo = youtubeData.data.videos[0] // 第一条就是最新的（API已排序）
+    const transformed = transformYouTube({
+      video_id: latestYouTubeVideo.video_id || '',
+      title: latestYouTubeVideo.title,
+      url: latestYouTubeVideo.url,
+      published_at: latestYouTubeVideo.published_at || '',
+      description: latestYouTubeVideo.description,
+      thumbnail_url: latestYouTubeVideo.thumbnail_url,
+      channel_name: latestYouTubeVideo.channel_name,
+      formattedDate: latestYouTubeVideo.formattedDate,
+      fetched_at: latestYouTubeVideo.fetched_at || new Date().toISOString()
+    }, 0)
+    if (transformed) latestItems.push(transformed)
   }
 
-  // 按发布时间排序（最新的在前）
-  const sortedItems = mergeAndSortTimelineItems(timelineItems)
-  
-  // 获取最新的三个（按时间顺序）
-  const latestItems = sortedItems.slice(0, 3)
+  // 按平台顺序排序：YouTube, Bilibili, 简书（确保显示顺序一致）
+  const platformOrder = ['youtube', 'bilibili', 'jianshu']
+  latestItems.sort((a, b) => {
+    const indexA = platformOrder.indexOf(a.platform)
+    const indexB = platformOrder.indexOf(b.platform)
+    // 如果平台不在列表中，排在最后
+    if (indexA === -1 && indexB === -1) return 0
+    if (indexA === -1) return 1
+    if (indexB === -1) return -1
+    return indexA - indexB
+  })
 
   // 为了向后兼容，保留原有的变量
   const latestVideo = bilibiliData?.success && bilibiliData.data?.videos?.length > 0 
@@ -205,7 +223,7 @@ export default async function HomePage() {
         {/* Latest Updates Hero Section */}
         <section className="artistic-gradient text-white py-20 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            {/* Latest Updates Grid - 按时间顺序显示最新内容 */}
+            {/* Latest Updates Grid - 显示每个平台的最新一条内容（YouTube、Bilibili、简书） */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {latestItems.length > 0 ? (
                 latestItems.map((item, index) => {
