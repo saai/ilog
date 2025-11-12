@@ -129,7 +129,7 @@ async function getDoubanRSSData() {
     })
 
     if (!response.ok) {
-      console.warn(`豆瓣RSS API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[时间流] 豆瓣RSS API请求失败: ${response.status} ${response.statusText}`)
       return { success: false, error: `豆瓣RSS API请求失败: ${response.status}` }
     }
 
@@ -143,17 +143,23 @@ async function getDoubanRSSData() {
       }
       return { success: true, data }
     }
+    console.error('[时间流] 豆瓣RSS数据获取失败: API返回的数据为空或无效', {
+      hasResult: !!result,
+      success: result?.success,
+      hasData: !!result?.data,
+      error: result?.error
+    })
     return { success: false, error: result.error || '豆瓣RSS数据获取失败' }
   } catch (error: any) {
-    // 静默处理错误，返回错误对象而不是抛出异常
+    // 记录错误日志，返回错误对象而不是抛出异常
     if (error.name === 'AbortError') {
-      console.warn('获取豆瓣RSS数据超时')
+      console.error('[时间流] 获取豆瓣RSS数据超时 (10秒)')
       return { success: false, error: '获取豆瓣RSS数据超时' }
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到豆瓣RSS API服务器，跳过豆瓣数据')
+      console.error('[时间流] 无法连接到豆瓣RSS API服务器，跳过豆瓣数据', { code: error.code })
       return { success: false, error: '无法连接到豆瓣RSS API服务器' }
     } else {
-      console.warn('获取豆瓣RSS数据失败:', error.message || error)
+      console.error('[时间流] 获取豆瓣RSS数据失败:', error.message || error, { error: error })
       return { success: false, error: error.message || '获取豆瓣RSS数据失败' }
     }
   }
@@ -188,7 +194,7 @@ async function getBilibiliData() {
     })
 
     if (!response.ok) {
-      console.warn(`B站API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[时间流] B站API请求失败: ${response.status} ${response.statusText}`)
       return { success: false, error: `B站API请求失败: ${response.status}` }
     }
 
@@ -209,17 +215,25 @@ async function getBilibiliData() {
       }
       return { success: true, data }
     }
+    console.error('[时间流] B站数据获取失败: API返回的数据为空或无效', {
+      hasResult: !!result,
+      success: result?.success,
+      hasData: !!result?.data,
+      hasVideos: !!result?.data?.videos,
+      videoCount: result?.data?.videos?.length || 0,
+      error: result?.error
+    })
     return { success: false, error: result.error || 'B站数据获取失败' }
   } catch (error: any) {
-    // 静默处理错误，返回错误对象而不是抛出异常
+    // 记录错误日志，返回错误对象而不是抛出异常
     if (error.name === 'AbortError') {
-      console.warn('获取B站数据超时')
+      console.error('[时间流] 获取B站数据超时 (10秒)')
       return { success: false, error: '获取B站数据超时' }
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到B站API服务器，跳过B站数据')
+      console.error('[时间流] 无法连接到B站API服务器，跳过B站数据', { code: error.code })
       return { success: false, error: '无法连接到B站API服务器' }
     } else {
-      console.warn('获取B站数据失败:', error.message || error)
+      console.error('[时间流] 获取B站数据失败:', error.message || error, { error: error })
       return { success: false, error: error.message || '获取B站数据失败' }
     }
   }
@@ -244,11 +258,14 @@ async function getJianshuData() {
     }
     const apiUrl = `${baseUrl}/api/jianshu-articles`
     const response = await fetch(apiUrl, {
-      cache: 'no-store'
+      cache: 'no-store',
+      // 添加超时和错误处理
+      signal: AbortSignal.timeout(10000) // 10秒超时
     })
 
     if (!response.ok) {
-      return { success: false, error: '简书API请求失败' }
+      console.error(`[时间流] 简书API请求失败: ${response.status} ${response.statusText}`)
+      return { success: false, error: `简书API请求失败: ${response.status}` }
     }
 
     const result = await response.json()
@@ -268,10 +285,27 @@ async function getJianshuData() {
       }
       return { success: true, data }
     }
+    console.error('[时间流] 简书数据获取失败: API返回的数据为空或无效', {
+      hasResult: !!result,
+      success: result?.success,
+      hasData: !!result?.data,
+      hasArticles: !!result?.data?.articles,
+      articleCount: result?.data?.articles?.length || 0,
+      error: result?.error
+    })
     return { success: false, error: result.error || '简书数据获取失败' }
-  } catch (error) {
-    console.error('获取简书数据失败:', error)
-    return { success: false, error: '获取简书数据失败' }
+  } catch (error: any) {
+    // 记录错误日志，返回错误对象而不是抛出异常
+    if (error.name === 'AbortError') {
+      console.error('[时间流] 获取简书数据超时 (10秒)')
+      return { success: false, error: '获取简书数据超时' }
+    } else if (error.code === 'ECONNREFUSED') {
+      console.error('[时间流] 无法连接到简书API服务器，跳过简书数据', { code: error.code })
+      return { success: false, error: '无法连接到简书API服务器' }
+    } else {
+      console.error('[时间流] 获取简书数据失败:', error.message || error, { error: error })
+      return { success: false, error: error.message || '获取简书数据失败' }
+    }
   }
 }
 
@@ -300,7 +334,7 @@ async function getYouTubeData() {
     })
 
     if (!response.ok) {
-      console.warn(`YouTube API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[时间流] YouTube API请求失败: ${response.status} ${response.statusText}`)
       return { success: false, error: `YouTube API请求失败: ${response.status}` }
     }
 
@@ -315,17 +349,25 @@ async function getYouTubeData() {
       }
       return { success: true, data }
     }
+    console.error('[时间流] YouTube数据获取失败: API返回的数据为空或无效', {
+      hasResult: !!result,
+      success: result?.success,
+      hasData: !!result?.data,
+      hasVideos: !!result?.data?.videos,
+      videoCount: result?.data?.videos?.length || 0,
+      error: result?.error
+    })
     return { success: false, error: result.error || 'YouTube数据获取失败' }
   } catch (error: any) {
-    // 静默处理错误，返回错误对象而不是抛出异常
+    // 记录错误日志，返回错误对象而不是抛出异常
     if (error.name === 'AbortError') {
-      console.warn('获取YouTube数据超时')
+      console.error('[时间流] 获取YouTube数据超时 (10秒)')
       return { success: false, error: '获取YouTube数据超时' }
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到YouTube API服务器，跳过YouTube数据')
+      console.error('[时间流] 无法连接到YouTube API服务器，跳过YouTube数据', { code: error.code })
       return { success: false, error: '无法连接到YouTube API服务器' }
     } else {
-      console.warn('获取YouTube数据失败:', error.message || error)
+      console.error('[时间流] 获取YouTube数据失败:', error.message || error, { error: error })
       return { success: false, error: error.message || '获取YouTube数据失败' }
     }
   }
@@ -419,25 +461,71 @@ export default async function TimelinePage() {
   
   // 记录失败的情况（但不阻止其他数据显示）
   if (results[0].status === 'rejected') {
-    console.error('获取豆瓣RSS数据失败:', results[0].reason)
+    console.error('[时间流] Promise rejected - 获取豆瓣RSS数据失败:', results[0].reason)
+  } else if (!doubanRSSResult.success) {
+    console.error('[时间流] 豆瓣RSS数据未成功加载', { 
+      success: doubanRSSResult.success,
+      error: doubanRSSResult.error 
+    })
   }
+  
   if (results[2].status === 'rejected') {
-    console.error('获取B站数据失败:', results[2].reason)
+    console.error('[时间流] Promise rejected - 获取B站数据失败:', results[2].reason)
+  } else if (!bilibiliResult.success) {
+    console.error('[时间流] B站数据未成功加载', { 
+      success: bilibiliResult.success,
+      error: bilibiliResult.error 
+    })
   }
+  
   if (results[3].status === 'rejected') {
-    console.error('获取简书数据失败:', results[3].reason)
+    console.error('[时间流] Promise rejected - 获取简书数据失败:', results[3].reason)
+  } else if (!jianshuResult.success) {
+    console.error('[时间流] 简书数据未成功加载', { 
+      success: jianshuResult.success,
+      error: jianshuResult.error 
+    })
   }
+  
   if (results[4].status === 'rejected') {
-    console.error('获取YouTube数据失败:', results[4].reason)
+    console.error('[时间流] Promise rejected - 获取YouTube数据失败:', results[4].reason)
+  } else if (!youtubeResult.success) {
+    console.error('[时间流] YouTube数据未成功加载', { 
+      success: youtubeResult.success,
+      error: youtubeResult.error 
+    })
   }
 
   // 合并并排序数据
+  const doubanRSSData = doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null
+  const bilibiliData = bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null
+  const jianshuData = jianshuResult.success && jianshuResult.data ? jianshuResult.data : null
+  const youtubeData = youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
+  
+  // 记录数据加载总结
+  const loadedPlatforms = []
+  const failedPlatforms = []
+  if (doubanRSSData) loadedPlatforms.push('豆瓣RSS')
+  else failedPlatforms.push('豆瓣RSS')
+  if (bilibiliData) loadedPlatforms.push('B站')
+  else failedPlatforms.push('B站')
+  if (jianshuData) loadedPlatforms.push('简书')
+  else failedPlatforms.push('简书')
+  if (youtubeData) loadedPlatforms.push('YouTube')
+  else failedPlatforms.push('YouTube')
+  
+  if (failedPlatforms.length > 0) {
+    console.error(`[时间流] 数据加载总结: 成功加载 ${loadedPlatforms.length} 个平台 (${loadedPlatforms.join(', ')})，失败 ${failedPlatforms.length} 个平台 (${failedPlatforms.join(', ')})`)
+  } else {
+    console.log(`[时间流] 数据加载总结: 所有平台数据加载成功 (${loadedPlatforms.join(', ')})`)
+  }
+  
   const timelineItems = await mergeAndSortData(
-    doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null,
+    doubanRSSData,
     null, // doubanResult always returns failure, pass null directly
-    bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null,
-    jianshuResult.success && jianshuResult.data ? jianshuResult.data : null,
-    youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
+    bilibiliData,
+    jianshuData,
+    youtubeData
   )
 
   // 按日期分组

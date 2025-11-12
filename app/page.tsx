@@ -80,20 +80,32 @@ async function getBilibiliVideos() {
     })
     
     if (!response.ok) {
-      console.warn(`B站API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[首页] B站API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
+    
+    // 检查API返回的数据是否成功
+    if (!data || !data.success || !data.data || !data.data.videos || data.data.videos.length === 0) {
+      console.error('[首页] B站数据获取失败: API返回的数据为空或无效', {
+        hasData: !!data,
+        success: data?.success,
+        hasVideos: !!data?.data?.videos,
+        videoCount: data?.data?.videos?.length || 0
+      })
+      return null
+    }
+    
     return data
   } catch (error: any) {
-    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    // 记录错误日志，但不抛出异常，返回null让其他平台继续
     if (error.name === 'AbortError') {
-      console.warn('获取B站数据超时')
+      console.error('[首页] 获取B站数据超时 (10秒)')
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到B站API服务器，跳过B站数据')
+      console.error('[首页] 无法连接到B站API服务器，跳过B站数据', { code: error.code })
     } else {
-      console.warn('获取B站视频数据失败:', error.message || error)
+      console.error('[首页] 获取B站视频数据失败:', error.message || error, { error: error })
     }
     return null
   }
@@ -126,20 +138,32 @@ async function getJianshuArticles() {
     })
     
     if (!response.ok) {
-      console.warn(`简书API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[首页] 简书API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
+    
+    // 检查API返回的数据是否成功
+    if (!data || !data.success || !data.data || !data.data.articles || data.data.articles.length === 0) {
+      console.error('[首页] 简书数据获取失败: API返回的数据为空或无效', {
+        hasData: !!data,
+        success: data?.success,
+        hasArticles: !!data?.data?.articles,
+        articleCount: data?.data?.articles?.length || 0
+      })
+      return null
+    }
+    
     return data
   } catch (error: any) {
-    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    // 记录错误日志，但不抛出异常，返回null让其他平台继续
     if (error.name === 'AbortError') {
-      console.warn('获取简书数据超时')
+      console.error('[首页] 获取简书数据超时 (10秒)')
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到简书API服务器，跳过简书数据')
+      console.error('[首页] 无法连接到简书API服务器，跳过简书数据', { code: error.code })
     } else {
-      console.warn('获取简书文章数据失败:', error.message || error)
+      console.error('[首页] 获取简书文章数据失败:', error.message || error, { error: error })
     }
     return null
   }
@@ -172,20 +196,32 @@ async function getYouTubeVideos() {
     })
     
     if (!response.ok) {
-      console.warn(`YouTube API请求失败: ${response.status} ${response.statusText}`)
+      console.error(`[首页] YouTube API请求失败: ${response.status} ${response.statusText}`)
       return null
     }
     
     const data = await response.json()
+    
+    // 检查API返回的数据是否成功
+    if (!data || !data.success || !data.data || !data.data.videos || data.data.videos.length === 0) {
+      console.error('[首页] YouTube数据获取失败: API返回的数据为空或无效', {
+        hasData: !!data,
+        success: data?.success,
+        hasVideos: !!data?.data?.videos,
+        videoCount: data?.data?.videos?.length || 0
+      })
+      return null
+    }
+    
     return data
   } catch (error: any) {
-    // 静默处理错误，不抛出异常，返回null让其他平台继续
+    // 记录错误日志，但不抛出异常，返回null让其他平台继续
     if (error.name === 'AbortError') {
-      console.warn('获取YouTube数据超时')
+      console.error('[首页] 获取YouTube数据超时 (10秒)')
     } else if (error.code === 'ECONNREFUSED') {
-      console.warn('无法连接到YouTube API服务器，跳过YouTube数据')
+      console.error('[首页] 无法连接到YouTube API服务器，跳过YouTube数据', { code: error.code })
     } else {
-      console.warn('获取YouTube视频数据失败:', error.message || error)
+      console.error('[首页] 获取YouTube视频数据失败:', error.message || error, { error: error })
     }
     return null
   }
@@ -206,20 +242,42 @@ export default async function HomePage() {
   
   // 记录失败的情况（但不阻止其他数据显示）
   if (results[0].status === 'rejected') {
-    console.error('获取B站数据失败:', results[0].reason)
+    console.error('[首页] Promise rejected - 获取B站数据失败:', results[0].reason)
+  } else if (!bilibiliData || !bilibiliData.success) {
+    console.error('[首页] B站数据未成功加载', { 
+      hasData: !!bilibiliData, 
+      success: bilibiliData?.success,
+      error: bilibiliData?.error 
+    })
   }
+  
   if (results[1].status === 'rejected') {
-    console.error('获取简书数据失败:', results[1].reason)
+    console.error('[首页] Promise rejected - 获取简书数据失败:', results[1].reason)
+  } else if (!jianshuData || !jianshuData.success) {
+    console.error('[首页] 简书数据未成功加载', { 
+      hasData: !!jianshuData, 
+      success: jianshuData?.success,
+      error: jianshuData?.error 
+    })
   }
+  
   if (results[2].status === 'rejected') {
-    console.error('获取YouTube数据失败:', results[2].reason)
+    console.error('[首页] Promise rejected - 获取YouTube数据失败:', results[2].reason)
+  } else if (!youtubeData || !youtubeData.success) {
+    console.error('[首页] YouTube数据未成功加载', { 
+      hasData: !!youtubeData, 
+      success: youtubeData?.success,
+      error: youtubeData?.error 
+    })
   }
 
   // 获取每个平台的最新一条数据（不合并排序）
   const latestItems: TimelineItem[] = []
 
   // 获取B站最新一条视频（只返回有url的视频）
-  if (bilibiliData?.success && bilibiliData.data?.videos && bilibiliData.data.videos.length > 0) {
+  if (!bilibiliData || !bilibiliData.success || !bilibiliData.data?.videos || bilibiliData.data.videos.length === 0) {
+    console.error('[首页] B站数据不可用，跳过B站最新视频显示')
+  } else if (bilibiliData?.success && bilibiliData.data?.videos && bilibiliData.data.videos.length > 0) {
     // 过滤出有 url 的视频
     const videosWithUrl = bilibiliData.data.videos.filter((video: any) => 
       video.url && video.url.trim() !== ''
@@ -246,7 +304,9 @@ export default async function HomePage() {
   }
 
   // 获取简书最新一篇文章
-  if (jianshuData?.success && jianshuData.data?.articles && jianshuData.data.articles.length > 0) {
+  if (!jianshuData || !jianshuData.success || !jianshuData.data?.articles || jianshuData.data.articles.length === 0) {
+    console.error('[首页] 简书数据不可用，跳过简书最新文章显示')
+  } else if (jianshuData?.success && jianshuData.data?.articles && jianshuData.data.articles.length > 0) {
     const latestArticle = jianshuData.data.articles[0] // 第一条就是最新的（API已排序）
     // 确保 published_at 存在，如果不存在则使用 published
     const publishedAt = latestArticle.published_at || latestArticle.published || null
@@ -265,7 +325,9 @@ export default async function HomePage() {
   }
 
   // 获取YouTube最新一条视频
-  if (youtubeData?.success && youtubeData.data?.videos && youtubeData.data.videos.length > 0) {
+  if (!youtubeData || !youtubeData.success || !youtubeData.data?.videos || youtubeData.data.videos.length === 0) {
+    console.error('[首页] YouTube数据不可用，跳过YouTube最新视频显示')
+  } else if (youtubeData?.success && youtubeData.data?.videos && youtubeData.data.videos.length > 0) {
     const latestYouTubeVideo = youtubeData.data.videos[0] // 第一条就是最新的（API已排序）
     const transformed = transformYouTube({
       video_id: latestYouTubeVideo.video_id || '',
@@ -279,6 +341,22 @@ export default async function HomePage() {
       fetched_at: latestYouTubeVideo.fetched_at || new Date().toISOString()
     }, 0)
     if (transformed) latestItems.push(transformed)
+  }
+
+  // 记录数据加载总结
+  const loadedPlatforms = []
+  const failedPlatforms = []
+  if (bilibiliData?.success && bilibiliData.data?.videos?.length > 0) loadedPlatforms.push('B站')
+  else failedPlatforms.push('B站')
+  if (jianshuData?.success && jianshuData.data?.articles?.length > 0) loadedPlatforms.push('简书')
+  else failedPlatforms.push('简书')
+  if (youtubeData?.success && youtubeData.data?.videos?.length > 0) loadedPlatforms.push('YouTube')
+  else failedPlatforms.push('YouTube')
+  
+  if (failedPlatforms.length > 0) {
+    console.error(`[首页] 数据加载总结: 成功加载 ${loadedPlatforms.length} 个平台 (${loadedPlatforms.join(', ')})，失败 ${failedPlatforms.length} 个平台 (${failedPlatforms.join(', ')})`)
+  } else {
+    console.log(`[首页] 数据加载总结: 所有平台数据加载成功 (${loadedPlatforms.join(', ')})`)
   }
 
   // 按平台顺序排序：YouTube, Bilibili, 简书（确保显示顺序一致）
