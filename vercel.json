@@ -18,19 +18,19 @@
   "crons": [
     {
       "path": "/api/cron/bilibili",
-      "schedule": "0 */6 * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/jianshu",
-      "schedule": "0 */6 * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/douban",
-      "schedule": "0 */6 * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/youtube",
-      "schedule": "0 */6 * * *"
+      "schedule": "* * * * *"
     }
   ]
 }
