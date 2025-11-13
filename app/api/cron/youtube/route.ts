@@ -10,9 +10,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
-  const cronSecret = process.env.CRON_SECRET
+  // 支持 CRON_SECRET 或 INIT_SECRET
+  const cronSecret = process.env.CRON_SECRET || process.env.INIT_SECRET
   
-  // 验证请求（如果是通过 Cron Jobs 调用）
+  // 验证请求（如果设置了密钥）
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

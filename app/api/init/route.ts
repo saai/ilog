@@ -55,9 +55,12 @@ export async function GET(request: Request) {
       const url = `${baseUrl}${crawler.path}`
       console.log(`正在运行 ${crawler.name} 爬虫: ${url}`)
       
+      // 获取 cron secret（优先使用 CRON_SECRET，如果没有则使用 INIT_SECRET）
+      const cronSecret = process.env.CRON_SECRET || process.env.INIT_SECRET
+      
       const response = await fetch(url, {
-        headers: initSecret ? {
-          'Authorization': `Bearer ${initSecret}`
+        headers: cronSecret ? {
+          'Authorization': `Bearer ${cronSecret}`
         } : {},
         signal: AbortSignal.timeout(30000) // 30秒超时
       })
