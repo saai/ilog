@@ -91,19 +91,88 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
 
 ## 🔍 查看执行日志
 
-### 在 Vercel Dashboard 中查看
+### 方法 1：在 Vercel Dashboard 中查看 Cron Jobs（推荐）
 
-1. 登录 Vercel Dashboard
-2. 选择你的项目
-3. 进入 **Settings** > **Cron Jobs**
-4. 查看每个 Cron Job 的执行历史和日志
+1. **登录 Vercel Dashboard**
+   - 访问 https://vercel.com/dashboard
+   - 登录你的账户
 
-### 在 Functions 日志中查看
+2. **选择项目**
+   - 在项目列表中找到你的项目（ilog）
+   - 点击进入项目详情页
 
-1. 进入 **Deployments** 页面
-2. 选择最新的部署
-3. 点击 **Functions** 标签
-4. 查看 `/api/cron/*` 函数的执行日志
+3. **查看 Cron Jobs**
+   - 点击左侧菜单的 **Settings**（设置）
+   - 在设置页面中找到 **Cron Jobs** 选项
+   - 点击进入 Cron Jobs 页面
+
+4. **查看执行历史**
+   - 在 Cron Jobs 页面，你会看到所有配置的定时任务：
+     - `/api/cron/bilibili`
+     - `/api/cron/jianshu`
+     - `/api/cron/douban`
+     - `/api/cron/youtube`
+   - 每个任务会显示：
+     - **Schedule**（执行频率）：`* * * * *`（每分钟）
+     - **Last Run**（最后执行时间）
+     - **Next Run**（下次执行时间）
+     - **Status**（状态）：成功/失败
+
+5. **查看详细日志**
+   - 点击某个 Cron Job 名称
+   - 查看执行历史列表
+   - 点击某次执行记录，查看详细的执行日志和响应
+
+### 方法 2：在 Deployments 中查看 Functions 日志
+
+1. **进入 Deployments 页面**
+   - 在项目页面，点击顶部的 **Deployments** 标签
+
+2. **选择部署**
+   - 找到最新的部署（通常是最上面的）
+   - 点击部署卡片进入详情
+
+3. **查看 Functions**
+   - 在部署详情页面，点击 **Functions** 标签
+   - 找到 `/api/cron/*` 相关的函数
+
+4. **查看执行日志**
+   - 点击函数名称
+   - 查看该函数的调用历史
+   - 点击某次调用，查看详细的请求/响应日志
+
+### 方法 3：使用 Vercel CLI 查看日志
+
+```bash
+# 安装 Vercel CLI（如果还没有）
+npm i -g vercel
+
+# 登录 Vercel
+vercel login
+
+# 查看项目日志
+vercel logs
+
+# 实时查看日志（类似 tail -f）
+vercel logs --follow
+
+# 查看特定函数的日志
+vercel logs --function /api/cron/douban
+```
+
+### 方法 4：在代码中查看日志
+
+所有 Cron API 都会输出详细的日志，包括：
+
+- `[Cron 豆瓣] 开始抓取数据，URL: ...`
+- `[Cron 豆瓣] HTTP 响应状态: 200 OK`
+- `[Cron 豆瓣] RSS 内容长度: ...`
+- `[Cron 豆瓣] 找到 X 个条目`
+- `[Cron 豆瓣] 数据已保存到数据库，共 X 条`
+
+这些日志会出现在：
+- Vercel Dashboard 的 Functions 日志中
+- Vercel CLI 的日志输出中
 
 ### 日志格式
 
