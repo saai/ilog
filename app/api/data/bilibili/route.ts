@@ -8,7 +8,14 @@ export const dynamic = 'force-dynamic'
 /**
  * B站视频数据 API - 仅从数据库读取，用于前端展示
  */
-export async function GET() {
+export async function GET(request: Request) {
+  // 添加调试日志
+  console.log('[Data API] Bilibili 请求:', {
+    url: request.url,
+    method: request.method,
+    headers: Object.fromEntries(request.headers.entries())
+  })
+  
   try {
     // 确保表已初始化
     await initTables()
