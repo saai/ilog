@@ -14,7 +14,6 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-display font-bold text-neutral-800 mb-4">About Me</h1>
-            <p className="text-xl text-neutral-600">Learn about my story and thoughts</p>
           </div>
           
           <div className="artistic-card p-8">
@@ -22,29 +21,31 @@ export default function AboutPage() {
               <h2 className="text-2xl font-display font-semibold text-neutral-800 mb-6">Hello, I'm Saai</h2>
               
               <p className="text-neutral-700 mb-6">
-                Welcome to my digital world! I'm a developer who loves technology and writing, and I enjoy sharing my learning experiences, technical insights, and life reflections.
+                Welcome to my digital profile! 
               </p>
-              
+
               <p className="text-neutral-700 mb-6">
-                This log deck is where I record my growth and share knowledge. I believe that writing helps organize thoughts better, and sharing connects me with like-minded friends.
+                Here you’ll find a collection of my work and thoughts across different platforms. Feel free to explore and follow my latest updates and journeys.
               </p>
               
-              <h3 className="text-xl font-display font-semibold text-neutral-800 mb-4">My Skills</h3>
+              <h3 className="text-xl font-display font-semibold text-neutral-800 mb-4">My Background</h3>
               <ul className="list-disc list-inside text-neutral-700 mb-6 space-y-2">
-                <li>Frontend Development: React, Vue, TypeScript</li>
-                <li>Backend Development: Node.js, Python, Java</li>
-                <li>Databases: MySQL, MongoDB, Redis</li>
-                <li>Others: Docker, Git, Linux</li>
+                <li>A “small-town exam kid” who grew up loving learning, and a woman with an engineering background;</li>
+                <li>Worked as a programmer for several years, familiar with data mining, AI, Vibe Coding, and related technologies;</li>
+                <li>Constantly in Gap Year, still exploring a balanced and self-aligned way of living.</li>
               </ul>
               
-              <h3 className="text-xl font-display font-semibold text-neutral-800 mb-4">My Interests</h3>
-              <p className="text-neutral-700 mb-6">
-                Besides programming, I also enjoy reading, traveling, and photography. I believe technology can make life better, and art can make technology more warm.
+              <h3 className="text-xl font-display font-semibold text-neutral-800 mb-4">My Thoughts</h3>
+              <p className="text-neutral-700">
+                I travel a lot, also do some reading, and I record my experiences and reflections on the platforms listed on my homepage. 
               </p>
-              
+              <p className="text-neutral-700"> 
+                I believe technology can create a better life, and art can warm the heart. 
+              </p>
+
               <h3 className="text-xl font-display font-semibold text-neutral-800 mb-4">Contact Me</h3>
               <p className="text-neutral-700">
-                If you have any thoughts or suggestions about my articles, feel free to contact me via email or social media. I'd love to chat with you!
+                If you have any thoughts or suggestions about my content, feel free to reach out via email or social media. I’d be happy to connect with you!
               </p>
             </div>
           </div>
