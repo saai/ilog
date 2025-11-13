@@ -12,6 +12,8 @@ interface DataRecord {
 
 // 从数据库读取 Bilibili 视频数据
 export async function getBilibiliVideosFromDB(limit: number = 30): Promise<any[]> {
+  // 确保 limit 是整数
+  const limitValue = Math.floor(Number(limit)) || 30
   const sql = `
     SELECT 
       id,
@@ -24,7 +26,7 @@ export async function getBilibiliVideosFromDB(limit: number = 30): Promise<any[]
     LIMIT ?
   `
   
-  const records = await query<DataRecord>(sql, [limit])
+  const records = await query<DataRecord>(sql, [limitValue])
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -81,6 +83,8 @@ export async function saveBilibiliVideosToDB(videos: any[]): Promise<void> {
 
 // 从数据库读取简书文章数据
 export async function getJianshuArticlesFromDB(limit: number = 30): Promise<any[]> {
+  // 确保 limit 是整数
+  const limitValue = Math.floor(Number(limit)) || 30
   const sql = `
     SELECT 
       id,
@@ -93,7 +97,7 @@ export async function getJianshuArticlesFromDB(limit: number = 30): Promise<any[
     LIMIT ?
   `
   
-  const records = await query<DataRecord>(sql, [limit])
+  const records = await query<DataRecord>(sql, [limitValue])
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -142,6 +146,8 @@ export async function saveJianshuArticlesToDB(articles: any[]): Promise<void> {
 
 // 从数据库读取 YouTube 视频数据
 export async function getYouTubeVideosFromDB(limit: number = 30): Promise<any[]> {
+  // 确保 limit 是整数
+  const limitValue = Math.floor(Number(limit)) || 30
   const sql = `
     SELECT 
       id,
@@ -154,7 +160,7 @@ export async function getYouTubeVideosFromDB(limit: number = 30): Promise<any[]>
     LIMIT ?
   `
   
-  const records = await query<DataRecord>(sql, [limit])
+  const records = await query<DataRecord>(sql, [limitValue])
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -207,6 +213,8 @@ export async function saveYouTubeVideosToDB(videos: any[]): Promise<void> {
 
 // 从数据库读取豆瓣兴趣数据
 export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[]> {
+  // 确保 limit 是整数
+  const limitValue = Math.floor(Number(limit)) || 30
   const sql = `
     SELECT 
       id,
@@ -219,7 +227,7 @@ export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[
     LIMIT ?
   `
   
-  const records = await query<DataRecord>(sql, [limit])
+  const records = await query<DataRecord>(sql, [limitValue])
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
