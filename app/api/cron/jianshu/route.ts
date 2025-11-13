@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 /**
  * 简书数据抓取 API
  * 可以直接调用或通过 Vercel Cron Jobs 定期运行

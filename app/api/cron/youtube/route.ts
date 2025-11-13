@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { parseStringPromise } from 'xml2js'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
 /**
  * YouTube 数据抓取 API
  * 可以直接调用或通过 Vercel Cron Jobs 定期运行
@@ -28,11 +31,22 @@ export async function GET(request: Request) {
 
     if (response.ok) {
       const xmlText = await response.text()
-      const parsed = await parseStringPromise(xmlText)
+      
+      // 检查返回的是否是 HTML（错误页面）
+      if (xmlText.trim().toLowerCase().startsWith('<!doctype') || xmlText.trim().toLowerCase().startsWith('<html')) {
+        throw new Error('YouTube RSS feed 返回了 HTML 页面而不是 XML')
+      }
+      
+      let parsed
+      try {
+        parsed = await parseStringPromise(xmlText)
+      } catch (parseError: any) {
+        throw new Error(`XML 解析失败: ${parseError.message}`)
+      }
       
       const feed = parsed.feed
       if (!feed) {
-        throw new Error('Invalid RSS format')
+        throw new Error('Invalid RSS format: 缺少 feed 元素')
       }
 
       const entries = feed.entry || []
