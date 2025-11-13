@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getYouTubeVideosFromDB, saveYouTubeVideosToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
@@ -6,7 +8,41 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const channelHandle = '@saai-saai' // YouTube 频道句柄
   
-  // 直接从 YouTube RSS feed 获取数据，不再读取本地文件
+  try {
+    // 确保表已初始化
+    await initTables()
+    
+    // 从数据库读取数据
+    const videos = await getYouTubeVideosFromDB(30)
+    
+    if (videos.length > 0) {
+      // 格式化日期
+      const formattedVideos = videos.map(video => ({
+        ...video,
+        formattedDate: formatDate(video.published_at || video.published || new Date().toISOString())
+      }))
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          videos: formattedVideos,
+          total: formattedVideos.length,
+          channel: {
+            handle: channelHandle,
+            name: channelHandle
+          }
+        }
+      })
+    }
+    
+    // 如果数据库中没有数据，尝试从在线API获取（作为后备方案）
+    console.log('[YouTubeAPI] 数据库中无数据，尝试从在线API获取...')
+  } catch (error: any) {
+    console.error('[YouTubeAPI] 从数据库读取失败:', error)
+    // 继续尝试从在线API获取
+  }
+  
+  // 从在线API获取数据（作为后备方案）
   try {
     // 尝试通过 RSS feed 获取数据（使用 channel_id）
     // 注意：需要先获取 channel_id，这里使用已知的 channel_id
@@ -54,6 +90,15 @@ export async function GET() {
             return dateB - dateA
           })
 
+        // 保存到数据库
+        try {
+          await saveYouTubeVideosToDB(videos)
+          console.log('[YouTubeAPI] 数据已保存到数据库')
+        } catch (dbError: any) {
+          console.error('[YouTubeAPI] 保存到数据库失败:', dbError)
+          // 继续返回数据，即使保存失败
+        }
+
         return NextResponse.json({
           success: true,
           data: {
@@ -68,7 +113,7 @@ export async function GET() {
       }
     }
   } catch (error) {
-    console.error('YouTube RSS feed 请求失败:', error)
+    console.error('[YouTubeAPI] RSS feed 请求失败:', error)
   }
 
   // 如果所有方法都失败，返回模拟数据

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getJianshuArticlesFromDB, saveJianshuArticlesToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
@@ -7,6 +9,41 @@ export async function GET() {
   const userId = '763ffbb1b873' // 您的简书用户ID
   const userUrl = `https://www.jianshu.com/u/${userId}`
   
+  try {
+    // 确保表已初始化
+    await initTables()
+    
+    // 从数据库读取数据
+    const articles = await getJianshuArticlesFromDB(30)
+    
+    if (articles.length > 0) {
+      // 格式化日期
+      const formattedArticles = articles.map(article => ({
+        ...article,
+        formattedDate: formatDate(article.published_at || article.published || new Date().toISOString())
+      }))
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          articles: formattedArticles,
+          total: formattedArticles.length,
+          user: {
+            id: userId,
+            nickname: formattedArticles[0]?.author || 'Saai'
+          }
+        }
+      })
+    }
+    
+    // 如果数据库中没有数据，尝试从在线API获取（作为后备方案）
+    console.log('[简书API] 数据库中无数据，尝试从在线API获取...')
+  } catch (error: any) {
+    console.error('[简书API] 从数据库读取失败:', error)
+    // 继续尝试从在线API获取
+  }
+  
+  // 从在线API获取数据（作为后备方案）
   try {
     console.log(`正在从简书用户页面抓取文章: ${userUrl}`)
     
@@ -34,6 +71,15 @@ export async function GET() {
     
     if (articles.length > 0) {
       console.log(`成功抓取 ${articles.length} 篇文章`)
+      
+      // 保存到数据库
+      try {
+        await saveJianshuArticlesToDB(articles)
+        console.log('[简书API] 数据已保存到数据库')
+      } catch (dbError: any) {
+        console.error('[简书API] 保存到数据库失败:', dbError)
+        // 继续返回数据，即使保存失败
+      }
       
       return NextResponse.json({
         success: true,
@@ -154,6 +200,14 @@ export async function GET() {
               return dateB - dateA
             })
 
+          // 保存到数据库
+          try {
+            await saveJianshuArticlesToDB(articles)
+            console.log('[简书API] 数据已保存到数据库')
+          } catch (dbError: any) {
+            console.error('[简书API] 保存到数据库失败:', dbError)
+          }
+
           return NextResponse.json({
             success: true,
             data: {
@@ -193,6 +247,14 @@ export async function GET() {
               const dateB = new Date(b.published_at || b.published).getTime()
               return dateB - dateA
             })
+
+          // 保存到数据库
+          try {
+            await saveJianshuArticlesToDB(articles)
+            console.log('[简书API] 数据已保存到数据库')
+          } catch (dbError: any) {
+            console.error('[简书API] 保存到数据库失败:', dbError)
+          }
 
           return NextResponse.json({
             success: true,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { initTables } from '@/lib/init-tables'
 
 /**
  * 初始化 API - 在项目部署后运行一次所有爬虫
@@ -11,6 +12,20 @@ export async function GET(request: Request) {
   // 验证请求（如果设置了密钥）
   if (initSecret && authHeader !== `Bearer ${initSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 初始化数据库表
+  try {
+    console.log('[初始化] 开始初始化数据库表...')
+    await initTables()
+    console.log('[初始化] 数据库表初始化完成')
+  } catch (error: any) {
+    console.error('[初始化] 数据库表初始化失败:', error)
+    return NextResponse.json({
+      success: false,
+      error: '数据库表初始化失败',
+      details: error.message
+    }, { status: 500 })
   }
 
   // 获取基础 URL

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { getBilibiliVideosFromDB, saveBilibiliVideosToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
@@ -6,7 +8,41 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const userId = '472773672' // 您的B站用户ID
   
-  // 直接从在线API获取数据，不再读取本地文件
+  try {
+    // 确保表已初始化
+    await initTables()
+    
+    // 从数据库读取数据
+    const videos = await getBilibiliVideosFromDB(30)
+    
+    if (videos.length > 0) {
+      // 格式化日期
+      const formattedVideos = videos.map(video => ({
+        ...video,
+        formattedDate: formatDate(video.published_at || video.published || new Date().toISOString())
+      }))
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          videos: formattedVideos,
+          total: formattedVideos.length,
+          user: {
+            id: userId,
+            nickname: formattedVideos[0]?.author || '未知用户'
+          }
+        }
+      })
+    }
+    
+    // 如果数据库中没有数据，尝试从在线API获取（作为后备方案）
+    console.log('[B站API] 数据库中无数据，尝试从在线API获取...')
+  } catch (error: any) {
+    console.error('[B站API] 从数据库读取失败:', error)
+    // 继续尝试从在线API获取
+  }
+  
+  // 从在线API获取数据（作为后备方案）
   try {
     const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=30&order=pubdate`
     
@@ -47,6 +83,15 @@ export async function GET() {
             return dateB - dateA
           })
 
+        // 保存到数据库
+        try {
+          await saveBilibiliVideosToDB(videos)
+          console.log('[B站API] 数据已保存到数据库')
+        } catch (dbError: any) {
+          console.error('[B站API] 保存到数据库失败:', dbError)
+          // 继续返回数据，即使保存失败
+        }
+
         return NextResponse.json({
           success: true,
           data: {
@@ -61,7 +106,7 @@ export async function GET() {
       }
     }
   } catch (error) {
-    console.error('B站API请求失败:', error)
+    console.error('[B站API] 在线API请求失败:', error)
   }
 
   // 如果所有方法都失败，返回模拟数据
