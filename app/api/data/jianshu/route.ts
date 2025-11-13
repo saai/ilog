@@ -38,9 +38,10 @@ export async function GET(request: Request) {
       })
     }
     
-    // 格式化日期
+    // 格式化日期并清理链接（移除 #comments）
     const formattedArticles = articles.map(article => ({
       ...article,
+      link: article.link ? article.link.replace(/#comments.*$/, '') : article.link,
       formattedDate: formatDate(article.published_at || article.published || new Date().toISOString())
     }))
     

@@ -1,55 +1,85 @@
 import { NextResponse } from 'next/server'
+import { getBilibiliVideosFromDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
+// 强制动态生成
+export const dynamic = 'force-dynamic'
+
+/**
+ * B站视频数据 API - 从数据库读取（兼容旧接口）
+ * 注意：新代码应使用 /api/data/bilibili
+ */
 export async function GET() {
-  // 直接从在线API获取数据，不再读取本地文件
   try {
-    const userId = '472773672'
-    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=30&order=pubdate`
+    // 确保表已初始化
+    await initTables()
     
-    const response = await fetch(apiUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://space.bilibili.com/',
-        'Accept': 'application/json, text/plain, */*'
-      },
-      next: { revalidate: 1800 } // 缓存30分钟
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      
-      if (data.code === 0 && data.data?.list?.vlist) {
-        const videos = data.data.list.vlist.map((video: any) => ({
-          title: video.title,
-          url: `https://www.bilibili.com/video/${video.bvid}`,
-          publish_time: new Date(video.created * 1000).toLocaleString('zh-CN'),
-          published_at: new Date(video.created * 1000).toISOString(),
-          play_count: String(video.play || 0),
-          cover_url: video.pic || '',
-          fetched_at: new Date().toISOString()
-        }))
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            user_id: userId,
-            total_videos: videos.length,
-            fetched_at: new Date().toISOString(),
-            videos: videos
-          }
-        })
-      }
+    // 从数据库读取数据
+    const videos = await getBilibiliVideosFromDB(30)
+    
+    if (videos.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          user_id: '472773672',
+          total_videos: 0,
+          fetched_at: new Date().toISOString(),
+          videos: []
+        },
+        message: '数据库中暂无数据'
+      })
     }
     
+    // 格式化日期
+    const formattedVideos = videos.map(video => ({
+      ...video,
+      formattedDate: formatDate(video.published_at || video.published || new Date().toISOString())
+    }))
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        user_id: '472773672',
+        total_videos: formattedVideos.length,
+        fetched_at: new Date().toISOString(),
+        videos: formattedVideos
+      }
+    })
+  } catch (error: any) {
+    console.error('[Bilibili Data API] 从数据库读取B站数据失败:', error)
     return NextResponse.json({
       success: false,
-      error: 'B站API请求失败'
-    })
-  } catch (error) {
-    console.error('获取B站数据失败:', error)
-    return NextResponse.json({
-      success: false,
-      error: '获取B站数据失败'
-    })
+      error: '从数据库读取B站数据失败',
+      details: error.message
+    }, { status: 500 })
+  }
+}
+
+// 格式化日期
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    
+    if (diffInDays === 0) {
+      return '今天'
+    } else if (diffInDays === 1) {
+      return '昨天'
+    } else if (diffInDays < 7) {
+      return `${diffInDays}天前`
+    } else if (diffInDays < 30) {
+      const weeks = Math.floor(diffInDays / 7)
+      return `${weeks}周前`
+    } else if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30)
+      return `${months}个月前`
+    } else {
+      const years = Math.floor(diffInDays / 365)
+      return `${years}年前`
+    }
+  } catch {
+    return '未知时间'
   }
 } 

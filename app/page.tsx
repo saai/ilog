@@ -86,13 +86,16 @@ export default function HomePage() {
         if (bilibiliRes.status === 'fulfilled' && bilibiliRes.value.ok) {
           try {
             const bilibiliData = await bilibiliRes.value.json()
+            console.log('[首页] B站数据响应:', { success: bilibiliData?.success, videos_count: bilibiliData?.data?.videos?.length })
             if (bilibiliData?.success && bilibiliData.data?.videos?.length > 0) {
               const videosWithUrl = bilibiliData.data.videos.filter((video: any) => 
                 video.url && video.url.trim() !== ''
               )
+              console.log('[首页] B站有效视频数:', videosWithUrl.length)
               if (videosWithUrl.length > 0) {
                 const latestVideo = videosWithUrl[0]
                 const publishedAt = latestVideo.published_at || latestVideo.published || null
+                console.log('[首页] B站最新视频:', { title: latestVideo.title, published_at: publishedAt })
                 if (publishedAt) {
                   const transformed = transformBilibili({
                     title: latestVideo.title,
@@ -104,11 +107,16 @@ export default function HomePage() {
                     formattedDate: latestVideo.formattedDate,
                     fetched_at: latestVideo.fetched_at || new Date().toISOString()
                   }, 0)
+                  console.log('[首页] B站转换结果:', transformed ? '成功' : '失败')
                   if (transformed) items.push(transformed)
+                } else {
+                  console.warn('[首页] B站视频缺少发布时间:', latestVideo)
                 }
+              } else {
+                console.warn('[首页] B站没有有效视频')
               }
             } else {
-              console.error('[首页] B站数据获取失败:', bilibiliData?.error)
+              console.error('[首页] B站数据获取失败:', bilibiliData?.error || '数据为空')
             }
           } catch (err) {
             console.error('[首页] B站数据解析失败:', err)
@@ -121,23 +129,42 @@ export default function HomePage() {
         if (jianshuRes.status === 'fulfilled' && jianshuRes.value.ok) {
           try {
             const jianshuData = await jianshuRes.value.json()
+            console.log('[首页] 简书数据响应:', { success: jianshuData?.success, articles_count: jianshuData?.data?.articles?.length })
             if (jianshuData?.success && jianshuData.data?.articles?.length > 0) {
-              const latestArticle = jianshuData.data.articles[0]
-              const publishedAt = latestArticle.published_at || latestArticle.published || null
-              if (publishedAt) {
-                const transformed = transformJianshu({
-                  title: latestArticle.title,
-                  link: latestArticle.link,
-                  slug: latestArticle.slug || '',
-                  published_at: publishedAt,
-                  fetched_at: latestArticle.fetched_at || new Date().toISOString(),
-                  formattedDate: latestArticle.formattedDate,
-                  user_id: latestArticle.user_id || ''
-                }, 0)
-                if (transformed) items.push(transformed)
+              // 过滤掉无效文章（标题为"0"或链接包含"#comments"）
+              const validArticles = jianshuData.data.articles.filter((article: any) => 
+                article.title && 
+                article.title !== "0" && 
+                article.link && 
+                !article.link.includes("#comments") &&
+                (article.published_at || article.published)
+              )
+              console.log('[首页] 简书有效文章数:', validArticles.length)
+              
+              if (validArticles.length > 0) {
+                const latestArticle = validArticles[0]
+                const publishedAt = latestArticle.published_at || latestArticle.published || null
+                console.log('[首页] 简书最新文章:', { title: latestArticle.title, published_at: publishedAt })
+                if (publishedAt) {
+                  const transformed = transformJianshu({
+                    title: latestArticle.title,
+                    link: latestArticle.link,
+                    slug: latestArticle.slug || '',
+                    published_at: publishedAt,
+                    fetched_at: latestArticle.fetched_at || new Date().toISOString(),
+                    formattedDate: latestArticle.formattedDate,
+                    user_id: latestArticle.user_id || ''
+                  }, 0)
+                  console.log('[首页] 简书转换结果:', transformed ? '成功' : '失败')
+                  if (transformed) items.push(transformed)
+                } else {
+                  console.warn('[首页] 简书文章缺少发布时间:', latestArticle)
+                }
+              } else {
+                console.warn('[首页] 简书没有有效文章')
               }
             } else {
-              console.error('[首页] 简书数据获取失败:', jianshuData?.error)
+              console.error('[首页] 简书数据获取失败:', jianshuData?.error || '数据为空')
             }
           } catch (err) {
             console.error('[首页] 简书数据解析失败:', err)
@@ -150,22 +177,29 @@ export default function HomePage() {
         if (youtubeRes.status === 'fulfilled' && youtubeRes.value.ok) {
           try {
             const youtubeData = await youtubeRes.value.json()
+            console.log('[首页] YouTube数据响应:', { success: youtubeData?.success, videos_count: youtubeData?.data?.videos?.length })
             if (youtubeData?.success && youtubeData.data?.videos?.length > 0) {
               const latestYouTubeVideo = youtubeData.data.videos[0]
-              const transformed = transformYouTube({
-                video_id: latestYouTubeVideo.video_id || '',
-                title: latestYouTubeVideo.title,
-                url: latestYouTubeVideo.url,
-                published_at: latestYouTubeVideo.published_at || '',
-                description: latestYouTubeVideo.description,
-                thumbnail_url: latestYouTubeVideo.thumbnail_url,
-                channel_name: latestYouTubeVideo.channel_name,
-                formattedDate: latestYouTubeVideo.formattedDate,
-                fetched_at: latestYouTubeVideo.fetched_at || new Date().toISOString()
-              }, 0)
-              if (transformed) items.push(transformed)
+              console.log('[首页] YouTube最新视频:', { title: latestYouTubeVideo.title, published_at: latestYouTubeVideo.published_at })
+              if (latestYouTubeVideo.published_at) {
+                const transformed = transformYouTube({
+                  video_id: latestYouTubeVideo.video_id || '',
+                  title: latestYouTubeVideo.title,
+                  url: latestYouTubeVideo.url,
+                  published_at: latestYouTubeVideo.published_at || '',
+                  description: latestYouTubeVideo.description,
+                  thumbnail_url: latestYouTubeVideo.thumbnail_url,
+                  channel_name: latestYouTubeVideo.channel_name,
+                  formattedDate: latestYouTubeVideo.formattedDate,
+                  fetched_at: latestYouTubeVideo.fetched_at || new Date().toISOString()
+                }, 0)
+                console.log('[首页] YouTube转换结果:', transformed ? '成功' : '失败')
+                if (transformed) items.push(transformed)
+              } else {
+                console.warn('[首页] YouTube视频缺少发布时间:', latestYouTubeVideo)
+              }
             } else {
-              console.error('[首页] YouTube数据获取失败:', youtubeData?.error)
+              console.error('[首页] YouTube数据获取失败:', youtubeData?.error || '数据为空')
             }
           } catch (err) {
             console.error('[首页] YouTube数据解析失败:', err)
@@ -185,6 +219,7 @@ export default function HomePage() {
           return indexA - indexB
         })
 
+        console.log('[首页] 最终数据项数:', items.length, '项:', items.map(i => i.platform))
         setLatestItems(items)
       } catch (err: any) {
         console.error('[首页] 数据获取失败:', err)

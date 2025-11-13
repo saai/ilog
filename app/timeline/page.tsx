@@ -217,12 +217,17 @@ export default function TimelinePage() {
         if (bilibiliRes.status === 'fulfilled' && bilibiliRes.value.ok) {
           try {
             const result = await bilibiliRes.value.json()
+            console.log('[时间流] B站数据响应:', { success: result?.success, videos_count: result?.data?.videos?.length })
             if (result.success && result.data) {
-              const videos = (result.data.videos || []).map((video: any) => ({
-                ...video,
-                published_at: video.published_at || video.published || null,
-                fetched_at: video.fetched_at || new Date().toISOString()
-              }))
+              const videos = (result.data.videos || [])
+                .map((video: any) => ({
+                  ...video,
+                  published_at: video.published_at || video.published || null,
+                  fetched_at: video.fetched_at || new Date().toISOString()
+                }))
+                .filter((video: any) => video.url && video.url.trim() !== '' && video.published_at !== null)
+              
+              console.log('[时间流] B站有效视频数:', videos.length)
               
               bilibiliData = {
                 user_id: result.data.user?.id || '',
@@ -244,12 +249,23 @@ export default function TimelinePage() {
         if (jianshuRes.status === 'fulfilled' && jianshuRes.value.ok) {
           try {
             const result = await jianshuRes.value.json()
+            console.log('[时间流] 简书数据响应:', { success: result?.success, articles_count: result?.data?.articles?.length })
             if (result.success && result.data) {
-              const articles = (result.data.articles || []).map((article: any) => ({
-                ...article,
-                published_at: article.published_at || article.published || null,
-                fetched_at: article.fetched_at || new Date().toISOString()
-              }))
+              const articles = (result.data.articles || [])
+                .map((article: any) => ({
+                  ...article,
+                  published_at: article.published_at || article.published || null,
+                  fetched_at: article.fetched_at || new Date().toISOString()
+                }))
+                .filter((article: any) => 
+                  article.title && 
+                  article.title !== "0" && 
+                  article.link && 
+                  !article.link.includes("#comments") &&
+                  article.published_at !== null
+                )
+              
+              console.log('[时间流] 简书有效文章数:', articles.length)
               
               jianshuData = {
                 user_id: result.data.user?.id || '',
@@ -271,13 +287,17 @@ export default function TimelinePage() {
         if (youtubeRes.status === 'fulfilled' && youtubeRes.value.ok) {
           try {
             const result = await youtubeRes.value.json()
+            console.log('[时间流] YouTube数据响应:', { success: result?.success, videos_count: result?.data?.videos?.length })
             if (result.success && result.data) {
+              const videos = (result.data.videos || []).filter((video: any) => video.published_at)
+              console.log('[时间流] YouTube有效视频数:', videos.length)
+              
               youtubeData = {
                 channel_handle: result.data.channel?.handle || '',
                 channel_name: result.data.channel?.name || '',
-                total_videos: result.data.total || 0,
+                total_videos: videos.length,
                 fetched_at: new Date().toISOString(),
-                videos: result.data.videos || []
+                videos: videos
               }
             } else {
               console.error('[时间流] YouTube数据获取失败:', result?.error)
@@ -289,6 +309,13 @@ export default function TimelinePage() {
           console.error('[时间流] YouTube API请求失败:', youtubeRes.status === 'rejected' ? youtubeRes.reason : '请求失败')
         }
 
+        console.log('[时间流] 准备合并数据:', {
+          douban: doubanRSSData?.collections?.length || 0,
+          bilibili: bilibiliData?.videos?.length || 0,
+          jianshu: jianshuData?.articles?.length || 0,
+          youtube: youtubeData?.videos?.length || 0
+        })
+
         // 合并并排序数据
         const items = await mergeAndSortData(
           doubanRSSData,
@@ -297,6 +324,7 @@ export default function TimelinePage() {
           youtubeData
         )
 
+        console.log('[时间流] 合并后数据项数:', items.length)
         setTimelineItems(items)
       } catch (err: any) {
         console.error('[时间流] 数据获取失败:', err)
