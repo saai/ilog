@@ -218,20 +218,15 @@ export async function saveYouTubeVideosToDB(videos: any[]): Promise<void> {
 export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[]> {
   // 确保 limit 是整数，并直接在 SQL 中使用（避免参数化查询的类型问题）
   const limitValue = Math.floor(Number(limit)) || 30
+  // 确保 limitValue 是有效的正整数
+  if (isNaN(limitValue) || limitValue < 1) {
+    throw new Error(`Invalid limit value: ${limitValue}`)
+  }
   // 使用字符串插值而不是参数化查询，因为 LIMIT 必须是整数常量
   // 注意：limitValue 已经过验证，是安全的整数
-  const sql = `
-    SELECT 
-      id,
-      data,
-      published_at,
-      created_at,
-      updated_at
-    FROM \`${TABLES.DOUBAN_INTERESTS}\`
-    ORDER BY published_at DESC
-    LIMIT ${limitValue}
-  `
+  const sql = `SELECT id, data, published_at, created_at, updated_at FROM \`${TABLES.DOUBAN_INTERESTS}\` ORDER BY published_at DESC LIMIT ${limitValue}`
   
+  console.log('[数据库] 执行豆瓣查询:', { sql, limitValue, limitType: typeof limitValue, isInteger: Number.isInteger(limitValue) })
   const records = await query<DataRecord>(sql)
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象

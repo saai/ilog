@@ -61,7 +61,8 @@ export async function query<T = any>(
   params?: any[]
 ): Promise<T[]> {
   const pool = getPool()
-  const [rows] = await pool.execute(sql, params)
+  // 如果没有参数，传递空数组而不是 undefined
+  const [rows] = await pool.execute(sql, params || [])
   return rows as T[]
 }
 
