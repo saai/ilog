@@ -12,8 +12,9 @@ interface DataRecord {
 
 // 从数据库读取 Bilibili 视频数据
 export async function getBilibiliVideosFromDB(limit: number = 30): Promise<any[]> {
-  // 确保 limit 是整数
+  // 确保 limit 是整数，并直接在 SQL 中使用（避免参数化查询的类型问题）
   const limitValue = Math.floor(Number(limit)) || 30
+  // 使用字符串插值而不是参数化查询，因为 LIMIT 必须是整数常量
   const sql = `
     SELECT 
       id,
@@ -23,10 +24,10 @@ export async function getBilibiliVideosFromDB(limit: number = 30): Promise<any[]
       updated_at
     FROM \`${TABLES.BILIBILI_VIDEOS}\`
     ORDER BY published_at DESC
-    LIMIT ?
+    LIMIT ${limitValue}
   `
   
-  const records = await query<DataRecord>(sql, [limitValue])
+  const records = await query<DataRecord>(sql)
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -83,8 +84,9 @@ export async function saveBilibiliVideosToDB(videos: any[]): Promise<void> {
 
 // 从数据库读取简书文章数据
 export async function getJianshuArticlesFromDB(limit: number = 30): Promise<any[]> {
-  // 确保 limit 是整数
+  // 确保 limit 是整数，并直接在 SQL 中使用（避免参数化查询的类型问题）
   const limitValue = Math.floor(Number(limit)) || 30
+  // 使用字符串插值而不是参数化查询，因为 LIMIT 必须是整数常量
   const sql = `
     SELECT 
       id,
@@ -94,10 +96,10 @@ export async function getJianshuArticlesFromDB(limit: number = 30): Promise<any[
       updated_at
     FROM \`${TABLES.JIANSHU_ARTICLES}\`
     ORDER BY published_at DESC
-    LIMIT ?
+    LIMIT ${limitValue}
   `
   
-  const records = await query<DataRecord>(sql, [limitValue])
+  const records = await query<DataRecord>(sql)
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -146,8 +148,9 @@ export async function saveJianshuArticlesToDB(articles: any[]): Promise<void> {
 
 // 从数据库读取 YouTube 视频数据
 export async function getYouTubeVideosFromDB(limit: number = 30): Promise<any[]> {
-  // 确保 limit 是整数
+  // 确保 limit 是整数，并直接在 SQL 中使用（避免参数化查询的类型问题）
   const limitValue = Math.floor(Number(limit)) || 30
+  // 使用字符串插值而不是参数化查询，因为 LIMIT 必须是整数常量
   const sql = `
     SELECT 
       id,
@@ -157,10 +160,10 @@ export async function getYouTubeVideosFromDB(limit: number = 30): Promise<any[]>
       updated_at
     FROM \`${TABLES.YOUTUBE_VIDEOS}\`
     ORDER BY published_at DESC
-    LIMIT ?
+    LIMIT ${limitValue}
   `
   
-  const records = await query<DataRecord>(sql, [limitValue])
+  const records = await query<DataRecord>(sql)
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
@@ -213,8 +216,10 @@ export async function saveYouTubeVideosToDB(videos: any[]): Promise<void> {
 
 // 从数据库读取豆瓣兴趣数据
 export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[]> {
-  // 确保 limit 是整数
+  // 确保 limit 是整数，并直接在 SQL 中使用（避免参数化查询的类型问题）
   const limitValue = Math.floor(Number(limit)) || 30
+  // 使用字符串插值而不是参数化查询，因为 LIMIT 必须是整数常量
+  // 注意：limitValue 已经过验证，是安全的整数
   const sql = `
     SELECT 
       id,
@@ -224,10 +229,10 @@ export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[
       updated_at
     FROM \`${TABLES.DOUBAN_INTERESTS}\`
     ORDER BY published_at DESC
-    LIMIT ?
+    LIMIT ${limitValue}
   `
   
-  const records = await query<DataRecord>(sql, [limitValue])
+  const records = await query<DataRecord>(sql)
   return records.map(record => {
     // TiDB/MySQL 的 JSON 字段在查询时已经自动解析为对象
     const data = typeof record.data === 'string' ? JSON.parse(record.data) : record.data
