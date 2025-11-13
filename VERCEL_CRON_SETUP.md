@@ -6,24 +6,30 @@
 
 ## ⏰ 定时任务配置
 
-当前配置为每 6 小时运行一次所有爬虫：
+**重要**：根据 [Vercel 文档](https://vercel.com/docs/cron-jobs)，免费计划（Hobby）有以下限制：
+- 最多 **2 个** Cron Jobs
+- 每个任务**每天最多触发一次**
 
-- **B站视频**: `/api/cron/bilibili` - 每 6 小时
-- **简书文章**: `/api/cron/jianshu` - 每 6 小时
-- **豆瓣RSS**: `/api/cron/douban` - 每 6 小时
-- **YouTube视频**: `/api/cron/youtube` - 每 6 小时
+为了符合免费计划限制，项目使用**统一的爬虫 API**：
+
+- **统一爬虫**: `/api/cron/all` - 每天 UTC 时间 00:00 执行一次
+  - 在一个 API 中执行所有平台的爬虫任务：
+    - B站视频
+    - 简书文章
+    - 豆瓣RSS
+    - YouTube视频
 
 ### Cron 表达式说明
 
-当前使用的表达式：`0 */6 * * *`
+当前使用的表达式：`0 0 * * *`
 
 - `0` - 分钟（0分）
-- `*/6` - 小时（每6小时）
+- `0` - 小时（0点，即午夜）
 - `*` - 日期（每天）
 - `*` - 月份（每月）
 - `*` - 星期（每周）
 
-这意味着任务会在每天的 00:00, 06:00, 12:00, 18:00 运行。
+这意味着任务会在**每天 UTC 时间 00:00**（北京时间 08:00）运行一次。
 
 ### 修改定时频率
 
@@ -33,21 +39,23 @@
 {
   "crons": [
     {
-      "path": "/api/cron/bilibili",
-      "schedule": "0 */6 * * *"  // 修改这里
+      "path": "/api/cron/all",
+      "schedule": "0 0 * * *"  // 修改这里
     }
   ]
 }
 ```
 
-#### 常用 Cron 表达式示例
+**注意**：免费计划限制每个任务每天最多触发一次，所以不能使用更频繁的 schedule（如每小时）。
 
-- `0 */1 * * *` - 每小时运行一次
-- `0 */3 * * *` - 每 3 小时运行一次
-- `0 */6 * * *` - 每 6 小时运行一次（当前配置）
-- `0 */12 * * *` - 每 12 小时运行一次
-- `0 0 * * *` - 每天午夜运行一次
-- `0 0 * * 0` - 每周日午夜运行一次
+#### 常用 Cron 表达式示例（免费计划限制：每天最多一次）
+
+- `0 0 * * *` - 每天 UTC 00:00 运行一次（当前配置）
+- `0 12 * * *` - 每天 UTC 12:00 运行一次
+- `0 0 * * 0` - 每周日 UTC 00:00 运行一次
+- `0 0 1 * *` - 每月 1 号 UTC 00:00 运行一次
+
+**如果需要更频繁的执行**，需要升级到 Vercel Pro 计划。
 
 ## 🔐 安全认证
 
@@ -64,30 +72,35 @@
 # 设置 CRON_SECRET 环境变量
 export CRON_SECRET="your-secret-key"
 
-# 调用 B站爬虫
+# 调用统一爬虫（执行所有平台）
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://your-domain.vercel.app/api/cron/all
+
+# 或者单独调用各个平台的爬虫（如果需要在特定时间单独执行）
 curl -H "Authorization: Bearer $CRON_SECRET" \
   https://your-domain.vercel.app/api/cron/bilibili
 
-# 调用简书爬虫
 curl -H "Authorization: Bearer $CRON_SECRET" \
   https://your-domain.vercel.app/api/cron/jianshu
 
-# 调用豆瓣爬虫
 curl -H "Authorization: Bearer $CRON_SECRET" \
   https://your-domain.vercel.app/api/cron/douban
 
-# 调用 YouTube 爬虫
 curl -H "Authorization: Bearer $CRON_SECRET" \
   https://your-domain.vercel.app/api/cron/youtube
 ```
 
 ## 📊 数据流程
 
-1. **Vercel Cron Jobs 触发** - 根据配置的 schedule 自动触发
-2. **调用 Cron API** - 请求对应的 `/api/cron/*` 端点
+1. **Vercel Cron Jobs 触发** - 每天 UTC 00:00 自动触发 `/api/cron/all`
+2. **执行统一爬虫** - `/api/cron/all` 依次执行所有平台的爬虫：
+   - B站视频爬虫
+   - 简书文章爬虫
+   - 豆瓣RSS爬虫
+   - YouTube视频爬虫
 3. **抓取数据** - 从各平台 API/RSS 获取最新数据
 4. **保存到数据库** - 自动保存到 TiDB 数据库
-5. **返回结果** - 返回成功/失败状态和抓取的数据条数
+5. **返回结果** - 返回所有平台的执行结果和抓取的数据条数
 
 ## 🔍 查看执行日志
 
@@ -107,13 +120,10 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
    - 点击进入 Cron Jobs 页面
 
 4. **查看执行历史**
-   - 在 Cron Jobs 页面，你会看到所有配置的定时任务：
-     - `/api/cron/bilibili`
-     - `/api/cron/jianshu`
-     - `/api/cron/douban`
-     - `/api/cron/youtube`
-   - 每个任务会显示：
-     - **Schedule**（执行频率）：`* * * * *`（每分钟）
+   - 在 Cron Jobs 页面，你会看到配置的定时任务：
+     - `/api/cron/all` - 统一爬虫任务
+   - 任务会显示：
+     - **Schedule**（执行频率）：`0 0 * * *`（每天 UTC 00:00）
      - **Last Run**（最后执行时间）
      - **Next Run**（下次执行时间）
      - **Status**（状态）：成功/失败
@@ -164,11 +174,15 @@ vercel logs --function /api/cron/douban
 
 所有 Cron API 都会输出详细的日志，包括：
 
-- `[Cron 豆瓣] 开始抓取数据，URL: ...`
-- `[Cron 豆瓣] HTTP 响应状态: 200 OK`
-- `[Cron 豆瓣] RSS 内容长度: ...`
-- `[Cron 豆瓣] 找到 X 个条目`
-- `[Cron 豆瓣] 数据已保存到数据库，共 X 条`
+- `[统一爬虫] 开始执行所有爬虫任务...`
+- `[统一爬虫] 开始抓取 B站数据...`
+- `[统一爬虫] B站数据已保存，共 X 条`
+- `[统一爬虫] 开始抓取简书数据...`
+- `[统一爬虫] 简书数据已保存，共 X 条`
+- `[统一爬虫] 开始抓取豆瓣数据...`
+- `[统一爬虫] 豆瓣数据已保存，共 X 条`
+- `[统一爬虫] 开始抓取 YouTube 数据...`
+- `[统一爬虫] YouTube 数据已保存，共 X 条`
 
 这些日志会出现在：
 - Vercel Dashboard 的 Functions 日志中
@@ -231,10 +245,20 @@ Vercel 会自动检测 `vercel.json` 中的 `crons` 配置并创建定时任务�
 
 ## 📝 注意事项
 
-1. **免费计划限制**：Vercel 免费计划的 Cron Jobs 有执行频率限制
-2. **函数超时**：每个 Cron API 的最大执行时间为 30 秒
+1. **免费计划限制**：
+   - 最多 **2 个** Cron Jobs
+   - 每个任务**每天最多触发一次**
+   - 因此使用统一的 `/api/cron/all` API，将所有爬虫合并到一个任务中
+
+2. **函数超时**：统一爬虫 API 的最大执行时间为 30 秒（如果超时，可以增加到 60 秒）
+
 3. **数据去重**：数据库操作会自动去重（基于 URL 或其他唯一标识）
-4. **错误处理**：如果某个平台的数据抓取失败，不会影响其他平台
+
+4. **错误处理**：如果某个平台的数据抓取失败，不会影响其他平台，所有结果都会在响应中返回
+
+5. **执行时间**：由于免费计划限制每天只能执行一次，建议在 UTC 00:00（北京时间 08:00）执行，确保每天都有数据更新
+
+6. **升级计划**：如果需要更频繁的执行（如每小时或每分钟），需要升级到 Vercel Pro 计划
 
 ## 🎯 最佳实践
 

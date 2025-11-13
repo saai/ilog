@@ -17,20 +17,8 @@
   },
   "crons": [
     {
-      "path": "/api/cron/bilibili",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/jianshu",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/douban",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/youtube",
-      "schedule": "* * * * *"
+      "path": "/api/cron/all",
+      "schedule": "0 0 * * *"
     }
   ]
 }
