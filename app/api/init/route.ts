@@ -40,28 +40,24 @@ export async function GET(request: Request) {
     baseUrl = `${protocol}://${request.headers.get('host')}`
   }
 
-  const crawlers = [
-    { name: 'bilibili', path: '/api/cron/bilibili' },
-    { name: 'jianshu', path: '/api/cron/jianshu' },
-    { name: 'douban', path: '/api/cron/douban' },
-    { name: 'youtube', path: '/api/cron/youtube' }
+  // 使用数据 API 而不是 cron API，这样不需要认证，且会自动从数据库读取或获取数据
+  const dataApis = [
+    { name: 'bilibili', path: '/api/bilibili-videos' },
+    { name: 'jianshu', path: '/api/jianshu-articles' },
+    { name: 'douban', path: '/api/douban-rss' },
+    { name: 'youtube', path: '/api/youtube-videos' }
   ]
 
   const results: any[] = []
 
-  // 依次运行所有爬虫
-  for (const crawler of crawlers) {
+  // 依次调用所有数据 API
+  for (const api of dataApis) {
     try {
-      const url = `${baseUrl}${crawler.path}`
-      console.log(`正在运行 ${crawler.name} 爬虫: ${url}`)
+      const url = `${baseUrl}${api.path}`
+      console.log(`[初始化] 正在获取 ${api.name} 数据: ${url}`)
       
-      // 获取 cron secret（优先使用 CRON_SECRET，如果没有则使用 INIT_SECRET）
-      const cronSecret = process.env.CRON_SECRET || process.env.INIT_SECRET
-      
+      // 数据 API 不需要认证，直接调用
       const response = await fetch(url, {
-        headers: cronSecret ? {
-          'Authorization': `Bearer ${cronSecret}`
-        } : {},
         signal: AbortSignal.timeout(30000) // 30秒超时
       })
 
@@ -75,7 +71,7 @@ export async function GET(request: Request) {
       } else {
         // 如果不是 JSON，先读取文本内容
         const text = await response.text()
-        console.error(`[初始化] ${crawler.name} 返回了非 JSON 响应:`, text.substring(0, 200))
+        console.error(`[初始化] ${api.name} 返回了非 JSON 响应:`, text.substring(0, 200))
         
         // 尝试解析为 JSON（可能包含错误信息）
         try {
@@ -83,7 +79,7 @@ export async function GET(request: Request) {
         } catch {
           // 如果无法解析，返回错误信息
           results.push({
-            name: crawler.name,
+            name: api.name,
             success: false,
             status: response.status,
             message: `返回了非 JSON 响应 (${response.status}): ${text.substring(0, 100)}`
@@ -92,16 +88,29 @@ export async function GET(request: Request) {
         }
       }
       
+      // 检查数据是否成功获取
+      const hasData = data?.success && data?.data && (
+        (api.name === 'bilibili' && data.data.videos?.length > 0) ||
+        (api.name === 'jianshu' && data.data.articles?.length > 0) ||
+        (api.name === 'douban' && (data.data.collections?.length > 0 || data.data.interests?.length > 0)) ||
+        (api.name === 'youtube' && data.data.videos?.length > 0)
+      )
+      
       results.push({
-        name: crawler.name,
-        success: response.ok && data?.success,
+        name: api.name,
+        success: response.ok && data?.success && hasData,
         status: response.status,
-        message: data?.success ? '成功' : (data?.error || data?.message || '失败')
+        message: hasData 
+          ? `成功获取 ${api.name === 'bilibili' ? data.data.videos?.length : 
+                           api.name === 'jianshu' ? data.data.articles?.length :
+                           api.name === 'douban' ? (data.data.collections?.length || data.data.interests?.length) :
+                           data.data.videos?.length} 条数据` 
+          : (data?.error || data?.message || '未获取到数据')
       })
     } catch (error: any) {
-      console.error(`[初始化] ${crawler.name} 爬虫失败:`, error)
+      console.error(`[初始化] ${api.name} 数据获取失败:`, error)
       results.push({
-        name: crawler.name,
+        name: api.name,
         success: false,
         status: 500,
         message: error.name === 'AbortError' ? '请求超时' : (error.message || '请求失败')
@@ -114,7 +123,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     success: successCount === totalCount,
-    message: `完成 ${successCount}/${totalCount} 个爬虫`,
+    message: `完成 ${successCount}/${totalCount} 个数据源`,
     results,
     timestamp: new Date().toISOString()
   })
