@@ -53,28 +53,55 @@ export async function GET(request: Request) {
   for (const crawler of crawlers) {
     try {
       const url = `${baseUrl}${crawler.path}`
-      console.log(`正在运行 ${crawler.name} 爬虫...`)
+      console.log(`正在运行 ${crawler.name} 爬虫: ${url}`)
       
       const response = await fetch(url, {
         headers: initSecret ? {
           'Authorization': `Bearer ${initSecret}`
-        } : {}
+        } : {},
+        signal: AbortSignal.timeout(30000) // 30秒超时
       })
 
-      const data = await response.json()
+      // 检查响应内容类型
+      const contentType = response.headers.get('content-type') || ''
+      let data: any = null
+
+      if (contentType.includes('application/json')) {
+        // 如果是 JSON，直接解析
+        data = await response.json()
+      } else {
+        // 如果不是 JSON，先读取文本内容
+        const text = await response.text()
+        console.error(`[初始化] ${crawler.name} 返回了非 JSON 响应:`, text.substring(0, 200))
+        
+        // 尝试解析为 JSON（可能包含错误信息）
+        try {
+          data = JSON.parse(text)
+        } catch {
+          // 如果无法解析，返回错误信息
+          results.push({
+            name: crawler.name,
+            success: false,
+            status: response.status,
+            message: `返回了非 JSON 响应 (${response.status}): ${text.substring(0, 100)}`
+          })
+          continue
+        }
+      }
       
       results.push({
         name: crawler.name,
-        success: response.ok && data.success,
+        success: response.ok && data?.success,
         status: response.status,
-        message: data.success ? '成功' : data.error || '失败'
+        message: data?.success ? '成功' : (data?.error || data?.message || '失败')
       })
     } catch (error: any) {
+      console.error(`[初始化] ${crawler.name} 爬虫失败:`, error)
       results.push({
         name: crawler.name,
         success: false,
         status: 500,
-        message: error.message || '请求失败'
+        message: error.name === 'AbortError' ? '请求超时' : (error.message || '请求失败')
       })
     }
   }
