@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
+import { saveBilibiliVideosToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
 
 /**
- * B站数据抓取 API
- * 可以直接调用或通过 Vercel Cron Jobs 定期运行
+ * B站数据抓取 API - 定时任务版本
+ * 抓取数据并保存到数据库
+ * 可以通过 Vercel Cron Jobs 定期运行
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -20,8 +23,11 @@ export async function GET(request: Request) {
   const userId = '472773672' // B站用户ID
   
   try {
+    // 确保表已初始化
+    await initTables()
+    
     // 使用 B站 API 获取视频数据
-    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=20&order=pubdate`
+    const apiUrl = `https://api.bilibili.com/x/space/arc/search?mid=${userId}&pn=1&ps=30&order=pubdate`
     
     const response = await fetch(apiUrl, {
       headers: {
@@ -36,23 +42,44 @@ export async function GET(request: Request) {
       const data = await response.json()
       
       if (data.code === 0 && data.data?.list?.vlist) {
-        const videos = data.data.list.vlist.map((video: any) => ({
-          title: video.title,
-          url: `https://www.bilibili.com/video/${video.bvid}`,
-          bvid: video.bvid,
-          publish_time: new Date(video.created * 1000).toISOString(),
-          play_count: video.play,
-          cover_url: video.pic,
-          description: video.description,
-          duration: video.length,
-          author: video.author,
-          created: video.created
-        }))
+        const videos = data.data.list.vlist
+          .map((video: any) => {
+            const publishedAt = new Date(video.created * 1000).toISOString()
+            return {
+              title: video.title,
+              url: `https://www.bilibili.com/video/${video.bvid}`,
+              publish_time: new Date(video.created * 1000).toLocaleString('zh-CN'),
+              published_at: publishedAt,
+              play_count: String(video.play || 0),
+              cover_url: video.pic || '',
+              description: video.description || '',
+              fetched_at: new Date().toISOString()
+            }
+          })
+          .sort((a: any, b: any) => {
+            const dateA = new Date(a.published_at).getTime()
+            const dateB = new Date(b.published_at).getTime()
+            return dateB - dateA
+          })
+
+        // 保存到数据库
+        try {
+          await saveBilibiliVideosToDB(videos)
+          console.log('[Cron B站] 数据已保存到数据库，共', videos.length, '条')
+        } catch (dbError: any) {
+          console.error('[Cron B站] 保存到数据库失败:', dbError)
+          return NextResponse.json({ 
+            success: false, 
+            error: '保存到数据库失败',
+            details: dbError.message 
+          }, { status: 500 })
+        }
 
         return NextResponse.json({
           success: true,
+          message: `成功抓取并保存 ${videos.length} 条B站视频数据`,
           data: {
-            videos,
+            videos: videos.length,
             total: videos.length,
             user: {
               id: userId,
@@ -69,7 +96,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch B站 data' 
     }, { status: 500 })
   } catch (error: any) {
-    console.error('B站数据抓取失败:', error)
+    console.error('[Cron B站] 数据抓取失败:', error)
     return NextResponse.json({ 
       success: false, 
       error: error.message 

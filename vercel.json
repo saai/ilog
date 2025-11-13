@@ -14,6 +14,24 @@
     "app/api/init/**/*.ts": {
       "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/bilibili",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/jianshu",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/douban",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/youtube",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }
 

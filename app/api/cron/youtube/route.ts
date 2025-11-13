@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import { parseStringPromise } from 'xml2js'
+import { saveYouTubeVideosToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
 
 /**
- * YouTube 数据抓取 API
- * 可以直接调用或通过 Vercel Cron Jobs 定期运行
+ * YouTube 数据抓取 API - 定时任务版本
+ * 抓取数据并保存到数据库
+ * 可以通过 Vercel Cron Jobs 定期运行
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -23,6 +26,9 @@ export async function GET(request: Request) {
   const rssUrl = `https://www.youtube.com/feeds/videos.xml?user=${channelName}`
   
   try {
+    // 确保表已初始化
+    await initTables()
+    
     const response = await fetch(rssUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -51,29 +57,49 @@ export async function GET(request: Request) {
       }
 
       const entries = feed.entry || []
-      const videos = entries.map((entry: any) => {
-        const videoId = entry['yt:videoId']?.[0] || ''
-        const title = entry.title?.[0] || ''
-        const link = entry.link?.[0]?.$.href || `https://www.youtube.com/watch?v=${videoId}`
-        const published = entry.published?.[0] || new Date().toISOString()
-        const description = entry['media:group']?.[0]?.['media:description']?.[0] || ''
-        const thumbnail = entry['media:group']?.[0]?.['media:thumbnail']?.[0]?.$.url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+      const videos = entries
+        .map((entry: any) => {
+          const videoId = entry['yt:videoId']?.[0] || ''
+          const title = entry.title?.[0] || ''
+          const link = entry.link?.[0]?.$.href || `https://www.youtube.com/watch?v=${videoId}`
+          const published = entry.published?.[0] || new Date().toISOString()
+          const description = entry['media:group']?.[0]?.['media:description']?.[0] || ''
+          const thumbnail = entry['media:group']?.[0]?.['media:thumbnail']?.[0]?.$.url || `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
 
-        return {
-          title,
-          url: link,
-          video_id: videoId,
-          published_at: published,
-          description,
-          thumbnail_url: thumbnail,
-          channel_name: channelHandle
-        }
-      })
+          return {
+            title,
+            url: link,
+            video_id: videoId,
+            published_at: published,
+            description,
+            thumbnail_url: thumbnail,
+            channel_name: channelHandle
+          }
+        })
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.published_at).getTime()
+          const dateB = new Date(b.published_at).getTime()
+          return dateB - dateA
+        })
+
+      // 保存到数据库
+      try {
+        await saveYouTubeVideosToDB(videos)
+        console.log('[Cron YouTube] 数据已保存到数据库，共', videos.length, '条')
+      } catch (dbError: any) {
+        console.error('[Cron YouTube] 保存到数据库失败:', dbError)
+        return NextResponse.json({ 
+          success: false, 
+          error: '保存到数据库失败',
+          details: dbError.message 
+        }, { status: 500 })
+      }
 
       return NextResponse.json({
         success: true,
+        message: `成功抓取并保存 ${videos.length} 条YouTube视频数据`,
         data: {
-          videos,
+          videos: videos.length,
           total: videos.length,
           channel: {
             handle: channelHandle,
@@ -89,7 +115,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch YouTube data' 
     }, { status: 500 })
   } catch (error: any) {
-    console.error('YouTube数据抓取失败:', error)
+    console.error('[Cron YouTube] 数据抓取失败:', error)
     return NextResponse.json({ 
       success: false, 
       error: error.message 

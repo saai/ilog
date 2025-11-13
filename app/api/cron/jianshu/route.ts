@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
+import { saveJianshuArticlesToDB } from '@/lib/db-operations'
+import { initTables } from '@/lib/init-tables'
 
 // 强制动态生成
 export const dynamic = 'force-dynamic'
 
 /**
- * 简书数据抓取 API
- * 可以直接调用或通过 Vercel Cron Jobs 定期运行
+ * 简书数据抓取 API - 定时任务版本
+ * 抓取数据并保存到数据库
+ * 可以通过 Vercel Cron Jobs 定期运行
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -20,6 +23,9 @@ export async function GET(request: Request) {
   const userId = '763ffbb1b873' // 简书用户ID
   
   try {
+    // 确保表已初始化
+    await initTables()
+    
     // 尝试多个简书 API 端点
     const apiUrls = [
       `https://www.jianshu.com/asimov/users/${userId}/public_notes?page=1&count=20`,
@@ -53,23 +59,47 @@ export async function GET(request: Request) {
           }
 
           if (articles.length > 0) {
-            const formattedArticles = articles.map((article: any) => ({
-              title: article.title || '无标题',
-              slug: article.slug || '',
-              link: `https://www.jianshu.com/p/${article.slug}`,
-              content: article.content || '',
-              contentSnippet: article.content ? article.content.substring(0, 200) + '...' : '',
-              published_at: article.published_at || article.created_at || new Date().toISOString(),
-              author: article.user?.nickname || '未知作者',
-              views_count: article.views_count || 0,
-              likes_count: article.likes_count || 0,
-              comments_count: article.comments_count || 0
-            }))
+            const formattedArticles = articles
+              .map((article: any) => {
+                const publishedAt = article.published_at || article.created_at || new Date().toISOString()
+                return {
+                  title: article.title || '无标题',
+                  slug: article.slug || '',
+                  link: `https://www.jianshu.com/p/${article.slug}`,
+                  published_at: publishedAt,
+                  content: article.content || '',
+                  author: article.user?.nickname || '未知作者',
+                  views: article.views_count || 0,
+                  likes: article.likes_count || 0,
+                  comments: article.comments_count || 0,
+                  user_id: userId,
+                  fetched_at: new Date().toISOString()
+                }
+              })
+              .sort((a: any, b: any) => {
+                const dateA = new Date(a.published_at).getTime()
+                const dateB = new Date(b.published_at).getTime()
+                return dateB - dateA
+              })
+
+            // 保存到数据库
+            try {
+              await saveJianshuArticlesToDB(formattedArticles)
+              console.log('[Cron 简书] 数据已保存到数据库，共', formattedArticles.length, '条')
+            } catch (dbError: any) {
+              console.error('[Cron 简书] 保存到数据库失败:', dbError)
+              return NextResponse.json({ 
+                success: false, 
+                error: '保存到数据库失败',
+                details: dbError.message 
+              }, { status: 500 })
+            }
 
             return NextResponse.json({
               success: true,
+              message: `成功抓取并保存 ${formattedArticles.length} 条简书文章数据`,
               data: {
-                articles: formattedArticles,
+                articles: formattedArticles.length,
                 total: formattedArticles.length,
                 user: {
                   id: userId,
@@ -81,7 +111,7 @@ export async function GET(request: Request) {
           }
         }
       } catch (error) {
-        console.error(`简书API端点失败 ${apiUrl}:`, error)
+        console.error(`[Cron 简书] API端点失败 ${apiUrl}:`, error)
         continue
       }
     }
@@ -91,7 +121,7 @@ export async function GET(request: Request) {
       error: 'Failed to fetch 简书 data' 
     }, { status: 500 })
   } catch (error: any) {
-    console.error('简书数据抓取失败:', error)
+    console.error('[Cron 简书] 数据抓取失败:', error)
     return NextResponse.json({ 
       success: false, 
       error: error.message 
