@@ -14,6 +14,15 @@
 - `TIDB_PASSWORD` - TiDB 密码
 - `TIDB_DATABASE` - 数据库名称
 
+### SSL/TLS 配置
+
+TiDB Cloud 要求使用 SSL/TLS 加密连接。系统会自动检测并配置 SSL：
+
+- **自动检测**：如果 `TIDB_HOST` 不是 `localhost` 或 `127.0.0.1`，系统会自动启用 SSL
+- **手动控制**（可选）：
+  - `TIDB_SSL=true` - 强制启用 SSL
+  - `TIDB_SSL_REJECT_UNAUTHORIZED=true` - 启用证书验证（默认不验证，适用于 TiDB Cloud）
+
 ## 数据库表结构
 
 系统会自动创建以下表（如果不存在）：
@@ -90,6 +99,15 @@ curl -X GET "https://your-domain.vercel.app/api/init" \
 1. 检查环境变量是否正确设置
 2. 确认 TiDB Integration 已正确配置
 3. 检查网络连接和防火墙设置
+
+### SSL 连接错误
+
+如果看到 "Connections using insecure transport are prohibited" 错误：
+
+1. **确认 SSL 已启用**：系统会自动为 TiDB Cloud 启用 SSL
+2. **检查环境变量**：确保 `TIDB_HOST` 指向 TiDB Cloud 地址（不是 localhost）
+3. **手动启用 SSL**：如果自动检测失败，设置 `TIDB_SSL=true` 环境变量
+4. **查看日志**：检查 Vercel 日志中的详细错误信息
 
 ### 表初始化失败
 

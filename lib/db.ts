@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise'
 
 // TiDB 连接配置（从环境变量读取）
-const dbConfig = {
+const dbConfig: mysql.PoolOptions = {
   host: process.env.TIDB_HOST || 'localhost',
   port: parseInt(process.env.TIDB_PORT || '4000'),
   user: process.env.TIDB_USER || 'root',
@@ -11,7 +11,26 @@ const dbConfig = {
   connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  keepAliveInitialDelay: 0,
+  // TiDB Cloud 要求使用 SSL/TLS 加密连接
+  // 如果设置了 TIDB_SSL 环境变量，则使用该值；否则根据 host 判断
+  ssl: (() => {
+    // 如果明确设置了 TIDB_SSL 环境变量
+    if (process.env.TIDB_SSL === 'true' || process.env.TIDB_SSL === '1') {
+      return {
+        // 对于 TiDB Cloud，启用 SSL 但不验证证书（使用公共 CA）
+        rejectUnauthorized: process.env.TIDB_SSL_REJECT_UNAUTHORIZED !== 'true'
+      }
+    }
+    // 如果 host 不是 localhost，默认启用 SSL（TiDB Cloud）
+    if (process.env.TIDB_HOST && !process.env.TIDB_HOST.includes('localhost') && !process.env.TIDB_HOST.includes('127.0.0.1')) {
+      return {
+        rejectUnauthorized: false
+      }
+    }
+    // 本地开发时可以不使用 SSL
+    return undefined
+  })()
 }
 
 // 创建连接池
