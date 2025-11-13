@@ -1,3 +1,6 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import ThumbnailImage from '@/components/ThumbnailImage'
@@ -9,9 +12,6 @@ import {
   transformYouTube,
   mergeAndSortTimelineItems
 } from './transformers'
-
-// 强制动态生成，避免构建时调用API
-export const dynamic = 'force-dynamic'
 
 // 豆瓣RSS收藏项的类型定义
 interface DoubanRSSItem {
@@ -32,16 +32,6 @@ interface DoubanRSSData {
     id: string
     nickname: string
   }
-  fetched_at: string
-}
-
-// 豆瓣收藏项的类型定义
-interface DoubanItem {
-  title: string
-  url: string
-  type: string
-  rating: string
-  author: string
   fetched_at: string
 }
 
@@ -103,282 +93,9 @@ interface YouTubeData {
   videos: YouTubeVideo[]
 }
 
-// 服务器端数据获取函数 - 通过 API 路由获取数据
-async function getDoubanRSSData() {
-  try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
-    // 在构建时，如果没有可用的URL，直接返回错误（避免连接错误）
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    if (!baseUrl) {
-      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
-      if (process.env.VERCEL && process.env.VERCEL_URL) {
-        baseUrl = `https://${process.env.VERCEL_URL}`
-      } else if (process.env.NODE_ENV === 'development') {
-        baseUrl = 'http://localhost:3000'
-      } else {
-        // 构建时且没有可用的URL，返回错误（避免连接错误）
-        console.warn('构建时无法获取豆瓣RSS数据：缺少BASE_URL配置，跳过API调用')
-        return { success: false, error: '构建时无法获取数据' }
-      }
-    }
-    const apiUrl = `${baseUrl}/api/data/douban`
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      // 添加超时和错误处理
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    })
-
-    if (!response.ok) {
-      console.error(`[时间流] 豆瓣RSS API请求失败: ${response.status} ${response.statusText}`)
-      return { success: false, error: `豆瓣RSS API请求失败: ${response.status}` }
-    }
-
-    const result = await response.json()
-    if (result.success && result.data) {
-      const data: DoubanRSSData = {
-        collections: result.data.collections || result.data.interests || [],
-        total: result.data.total || 0,
-        user: result.data.user || { id: '', nickname: '' },
-        fetched_at: result.data.fetched_at || new Date().toISOString()
-      }
-      return { success: true, data }
-    }
-    console.error('[时间流] 豆瓣RSS数据获取失败: API返回的数据为空或无效', {
-      hasResult: !!result,
-      success: result?.success,
-      hasData: !!result?.data,
-      error: result?.error
-    })
-    return { success: false, error: result.error || '豆瓣RSS数据获取失败' }
-  } catch (error: any) {
-    // 记录错误日志，返回错误对象而不是抛出异常
-    if (error.name === 'AbortError') {
-      console.error('[时间流] 获取豆瓣RSS数据超时 (10秒)')
-      return { success: false, error: '获取豆瓣RSS数据超时' }
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('[时间流] 无法连接到豆瓣RSS API服务器，跳过豆瓣数据', { code: error.code })
-      return { success: false, error: '无法连接到豆瓣RSS API服务器' }
-    } else {
-      console.error('[时间流] 获取豆瓣RSS数据失败:', error.message || error, { error: error })
-      return { success: false, error: error.message || '获取豆瓣RSS数据失败' }
-    }
-  }
-}
-
-async function getDoubanData(): Promise<{ success: false; error: string }> {
-  return { success: false, error: '豆瓣收藏数据已不再通过Spider抓取，请使用RSS数据' }
-}
-
-async function getBilibiliData() {
-  try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
-    // 在构建时，如果没有可用的URL，直接返回错误（避免连接错误）
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    if (!baseUrl) {
-      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
-      if (process.env.VERCEL && process.env.VERCEL_URL) {
-        baseUrl = `https://${process.env.VERCEL_URL}`
-      } else if (process.env.NODE_ENV === 'development') {
-        baseUrl = 'http://localhost:3000'
-      } else {
-        // 构建时且没有可用的URL，返回错误（避免连接错误）
-        console.warn('构建时无法获取B站数据：缺少BASE_URL配置，跳过API调用')
-        return { success: false, error: '构建时无法获取数据' }
-      }
-    }
-    const apiUrl = `${baseUrl}/api/data/bilibili`
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      // 添加超时和错误处理
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    })
-
-    if (!response.ok) {
-      console.error(`[时间流] B站API请求失败: ${response.status} ${response.statusText}`)
-      return { success: false, error: `B站API请求失败: ${response.status}` }
-    }
-
-    const result = await response.json()
-    if (result.success && result.data) {
-      // 确保每个视频都有 published_at 字段
-      const videos = (result.data.videos || []).map((video: any) => ({
-        ...video,
-        published_at: video.published_at || video.published || null,
-        fetched_at: video.fetched_at || new Date().toISOString()
-      }))
-      
-      const data: BilibiliData = {
-        user_id: result.data.user?.id || '',
-        total_videos: videos.length,
-        fetched_at: new Date().toISOString(),
-        videos: videos
-      }
-      return { success: true, data }
-    }
-    console.error('[时间流] B站数据获取失败: API返回的数据为空或无效', {
-      hasResult: !!result,
-      success: result?.success,
-      hasData: !!result?.data,
-      hasVideos: !!result?.data?.videos,
-      videoCount: result?.data?.videos?.length || 0,
-      error: result?.error
-    })
-    return { success: false, error: result.error || 'B站数据获取失败' }
-  } catch (error: any) {
-    // 记录错误日志，返回错误对象而不是抛出异常
-    if (error.name === 'AbortError') {
-      console.error('[时间流] 获取B站数据超时 (10秒)')
-      return { success: false, error: '获取B站数据超时' }
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('[时间流] 无法连接到B站API服务器，跳过B站数据', { code: error.code })
-      return { success: false, error: '无法连接到B站API服务器' }
-    } else {
-      console.error('[时间流] 获取B站数据失败:', error.message || error, { error: error })
-      return { success: false, error: error.message || '获取B站数据失败' }
-    }
-  }
-}
-
-async function getJianshuData() {
-  try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
-    // 在构建时，如果没有可用的URL，直接返回错误（避免连接错误）
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    if (!baseUrl) {
-      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
-      if (process.env.VERCEL && process.env.VERCEL_URL) {
-        baseUrl = `https://${process.env.VERCEL_URL}`
-      } else if (process.env.NODE_ENV === 'development') {
-        baseUrl = 'http://localhost:3000'
-      } else {
-        // 构建时且没有可用的URL，返回错误（避免连接错误）
-        console.warn('构建时无法获取简书数据：缺少BASE_URL配置，跳过API调用')
-        return { success: false, error: '构建时无法获取数据' }
-      }
-    }
-    const apiUrl = `${baseUrl}/api/data/jianshu`
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      // 添加超时和错误处理
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    })
-
-    if (!response.ok) {
-      console.error(`[时间流] 简书API请求失败: ${response.status} ${response.statusText}`)
-      return { success: false, error: `简书API请求失败: ${response.status}` }
-    }
-
-    const result = await response.json()
-    if (result.success && result.data) {
-      // 确保每个文章都有 published_at 字段
-      const articles = (result.data.articles || []).map((article: any) => ({
-        ...article,
-        published_at: article.published_at || article.published || null,
-        fetched_at: article.fetched_at || new Date().toISOString()
-      }))
-      
-      const data: JianshuData = {
-        user_id: result.data.user?.id || '',
-        total_articles: articles.length,
-        fetched_at: new Date().toISOString(),
-        articles: articles
-      }
-      return { success: true, data }
-    }
-    console.error('[时间流] 简书数据获取失败: API返回的数据为空或无效', {
-      hasResult: !!result,
-      success: result?.success,
-      hasData: !!result?.data,
-      hasArticles: !!result?.data?.articles,
-      articleCount: result?.data?.articles?.length || 0,
-      error: result?.error
-    })
-    return { success: false, error: result.error || '简书数据获取失败' }
-  } catch (error: any) {
-    // 记录错误日志，返回错误对象而不是抛出异常
-    if (error.name === 'AbortError') {
-      console.error('[时间流] 获取简书数据超时 (10秒)')
-      return { success: false, error: '获取简书数据超时' }
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('[时间流] 无法连接到简书API服务器，跳过简书数据', { code: error.code })
-      return { success: false, error: '无法连接到简书API服务器' }
-    } else {
-      console.error('[时间流] 获取简书数据失败:', error.message || error, { error: error })
-      return { success: false, error: error.message || '获取简书数据失败' }
-    }
-  }
-}
-
-async function getYouTubeData() {
-  try {
-    // 构建API URL：优先使用环境变量，否则在本地开发时使用localhost
-    // 在构建时，如果没有可用的URL，直接返回错误（避免连接错误）
-    let baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    if (!baseUrl) {
-      // 在 Vercel 构建时，VERCEL_URL 可能不可用，检查 VERCEL 环境变量
-      if (process.env.VERCEL && process.env.VERCEL_URL) {
-        baseUrl = `https://${process.env.VERCEL_URL}`
-      } else if (process.env.NODE_ENV === 'development') {
-        baseUrl = 'http://localhost:3000'
-      } else {
-        // 构建时且没有可用的URL，返回错误（避免连接错误）
-        console.warn('构建时无法获取YouTube数据：缺少BASE_URL配置，跳过API调用')
-        return { success: false, error: '构建时无法获取数据' }
-      }
-    }
-    const apiUrl = `${baseUrl}/api/data/youtube`
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      // 添加超时和错误处理
-      signal: AbortSignal.timeout(10000) // 10秒超时
-    })
-
-    if (!response.ok) {
-      console.error(`[时间流] YouTube API请求失败: ${response.status} ${response.statusText}`)
-      return { success: false, error: `YouTube API请求失败: ${response.status}` }
-    }
-
-    const result = await response.json()
-    if (result.success && result.data) {
-      const data: YouTubeData = {
-        channel_handle: result.data.channel?.handle || '',
-        channel_name: result.data.channel?.name || '',
-        total_videos: result.data.total || 0,
-        fetched_at: new Date().toISOString(),
-        videos: result.data.videos || []
-      }
-      return { success: true, data }
-    }
-    console.error('[时间流] YouTube数据获取失败: API返回的数据为空或无效', {
-      hasResult: !!result,
-      success: result?.success,
-      hasData: !!result?.data,
-      hasVideos: !!result?.data?.videos,
-      videoCount: result?.data?.videos?.length || 0,
-      error: result?.error
-    })
-    return { success: false, error: result.error || 'YouTube数据获取失败' }
-  } catch (error: any) {
-    // 记录错误日志，返回错误对象而不是抛出异常
-    if (error.name === 'AbortError') {
-      console.error('[时间流] 获取YouTube数据超时 (10秒)')
-      return { success: false, error: '获取YouTube数据超时' }
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('[时间流] 无法连接到YouTube API服务器，跳过YouTube数据', { code: error.code })
-      return { success: false, error: '无法连接到YouTube API服务器' }
-    } else {
-      console.error('[时间流] 获取YouTube数据失败:', error.message || error, { error: error })
-      return { success: false, error: error.message || '获取YouTube数据失败' }
-    }
-  }
-}
-
-// 注意：formatRelativeTime 和 parseRFC822Date 函数已移至 transformers.ts
-
 // 合并所有平台数据并排序（使用统一的转换器）
 async function mergeAndSortData(
   doubanRSSData: DoubanRSSData | null,
-  doubanData: any,
   bilibiliData: BilibiliData | null,
   jianshuData: JianshuData | null,
   youtubeData: YouTubeData | null
@@ -397,8 +114,6 @@ async function mergeAndSortData(
     })
   }
 
-  // 注意：豆瓣收藏的Selenium爬虫数据已跳过（因为没有实际发布时间）
-
   // 转换简书文章数据
   if (jianshuData) {
     jianshuData.articles
@@ -408,7 +123,6 @@ async function mergeAndSortData(
       )
       .map((article: JianshuArticle) => ({
         ...article,
-        // 确保 published_at 存在，如果不存在则使用 published
         published_at: article.published_at || (article as any).published || null
       }))
       .filter((article: JianshuArticle) => article.published_at !== null)
@@ -442,91 +156,158 @@ async function mergeAndSortData(
   return mergeAndSortTimelineItems(items)
 }
 
-export default async function TimelinePage() {
-  // 服务器端获取所有数据（使用 allSettled 确保即使某个平台失败，其他平台也能继续）
-  const results = await Promise.allSettled([
-    getDoubanRSSData(),
-    getDoubanData(),
-    getBilibiliData(),
-    getJianshuData(),
-    getYouTubeData()
-  ])
-  
-  // 提取成功的结果
-  const doubanRSSResult = results[0].status === 'fulfilled' ? results[0].value : { success: false, error: '获取失败' }
-  const doubanResult = results[1].status === 'fulfilled' ? results[1].value : { success: false, error: '获取失败' }
-  const bilibiliResult = results[2].status === 'fulfilled' ? results[2].value : { success: false, error: '获取失败' }
-  const jianshuResult = results[3].status === 'fulfilled' ? results[3].value : { success: false, error: '获取失败' }
-  const youtubeResult = results[4].status === 'fulfilled' ? results[4].value : { success: false, error: '获取失败' }
-  
-  // 记录失败的情况（但不阻止其他数据显示）
-  if (results[0].status === 'rejected') {
-    console.error('[时间流] Promise rejected - 获取豆瓣RSS数据失败:', results[0].reason)
-  } else if (!doubanRSSResult.success) {
-    console.error('[时间流] 豆瓣RSS数据未成功加载', { 
-      success: doubanRSSResult.success,
-      error: doubanRSSResult.error 
-    })
-  }
-  
-  if (results[2].status === 'rejected') {
-    console.error('[时间流] Promise rejected - 获取B站数据失败:', results[2].reason)
-  } else if (!bilibiliResult.success) {
-    console.error('[时间流] B站数据未成功加载', { 
-      success: bilibiliResult.success,
-      error: bilibiliResult.error 
-    })
-  }
-  
-  if (results[3].status === 'rejected') {
-    console.error('[时间流] Promise rejected - 获取简书数据失败:', results[3].reason)
-  } else if (!jianshuResult.success) {
-    console.error('[时间流] 简书数据未成功加载', { 
-      success: jianshuResult.success,
-      error: jianshuResult.error 
-    })
-  }
-  
-  if (results[4].status === 'rejected') {
-    console.error('[时间流] Promise rejected - 获取YouTube数据失败:', results[4].reason)
-  } else if (!youtubeResult.success) {
-    console.error('[时间流] YouTube数据未成功加载', { 
-      success: youtubeResult.success,
-      error: youtubeResult.error 
-    })
-  }
+export default function TimelinePage() {
+  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // 合并并排序数据
-  const doubanRSSData = doubanRSSResult.success && doubanRSSResult.data ? doubanRSSResult.data : null
-  const bilibiliData = bilibiliResult.success && bilibiliResult.data ? bilibiliResult.data : null
-  const jianshuData = jianshuResult.success && jianshuResult.data ? jianshuResult.data : null
-  const youtubeData = youtubeResult.success && youtubeResult.data ? youtubeResult.data : null
-  
-  // 记录数据加载总结
-  const loadedPlatforms = []
-  const failedPlatforms = []
-  if (doubanRSSData) loadedPlatforms.push('豆瓣RSS')
-  else failedPlatforms.push('豆瓣RSS')
-  if (bilibiliData) loadedPlatforms.push('B站')
-  else failedPlatforms.push('B站')
-  if (jianshuData) loadedPlatforms.push('简书')
-  else failedPlatforms.push('简书')
-  if (youtubeData) loadedPlatforms.push('YouTube')
-  else failedPlatforms.push('YouTube')
-  
-  if (failedPlatforms.length > 0) {
-    console.error(`[时间流] 数据加载总结: 成功加载 ${loadedPlatforms.length} 个平台 (${loadedPlatforms.join(', ')})，失败 ${failedPlatforms.length} 个平台 (${failedPlatforms.join(', ')})`)
-  } else {
-    console.log(`[时间流] 数据加载总结: 所有平台数据加载成功 (${loadedPlatforms.join(', ')})`)
-  }
-  
-  const timelineItems = await mergeAndSortData(
-    doubanRSSData,
-    null, // doubanResult always returns failure, pass null directly
-    bilibiliData,
-    jianshuData,
-    youtubeData
-  )
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        // 使用相对路径，在浏览器中调用 API
+        const [doubanRes, bilibiliRes, jianshuRes, youtubeRes] = await Promise.allSettled([
+          fetch('/api/data/douban', {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(10000)
+          }),
+          fetch('/api/data/bilibili', {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(10000)
+          }),
+          fetch('/api/data/jianshu', {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(10000)
+          }),
+          fetch('/api/data/youtube', {
+            cache: 'no-store',
+            signal: AbortSignal.timeout(10000)
+          })
+        ])
+
+        let doubanRSSData: DoubanRSSData | null = null
+        let bilibiliData: BilibiliData | null = null
+        let jianshuData: JianshuData | null = null
+        let youtubeData: YouTubeData | null = null
+
+        // 处理豆瓣数据
+        if (doubanRes.status === 'fulfilled' && doubanRes.value.ok) {
+          try {
+            const result = await doubanRes.value.json()
+            if (result.success && result.data) {
+              doubanRSSData = {
+                collections: result.data.collections || result.data.interests || [],
+                total: result.data.total || 0,
+                user: result.data.user || { id: '', nickname: '' },
+                fetched_at: result.data.fetched_at || new Date().toISOString()
+              }
+            } else {
+              console.error('[时间流] 豆瓣RSS数据获取失败:', result?.error)
+            }
+          } catch (err) {
+            console.error('[时间流] 豆瓣RSS数据解析失败:', err)
+          }
+        } else {
+          console.error('[时间流] 豆瓣RSS API请求失败:', doubanRes.status === 'rejected' ? doubanRes.reason : '请求失败')
+        }
+
+        // 处理B站数据
+        if (bilibiliRes.status === 'fulfilled' && bilibiliRes.value.ok) {
+          try {
+            const result = await bilibiliRes.value.json()
+            if (result.success && result.data) {
+              const videos = (result.data.videos || []).map((video: any) => ({
+                ...video,
+                published_at: video.published_at || video.published || null,
+                fetched_at: video.fetched_at || new Date().toISOString()
+              }))
+              
+              bilibiliData = {
+                user_id: result.data.user?.id || '',
+                total_videos: videos.length,
+                fetched_at: new Date().toISOString(),
+                videos: videos
+              }
+            } else {
+              console.error('[时间流] B站数据获取失败:', result?.error)
+            }
+          } catch (err) {
+            console.error('[时间流] B站数据解析失败:', err)
+          }
+        } else {
+          console.error('[时间流] B站API请求失败:', bilibiliRes.status === 'rejected' ? bilibiliRes.reason : '请求失败')
+        }
+
+        // 处理简书数据
+        if (jianshuRes.status === 'fulfilled' && jianshuRes.value.ok) {
+          try {
+            const result = await jianshuRes.value.json()
+            if (result.success && result.data) {
+              const articles = (result.data.articles || []).map((article: any) => ({
+                ...article,
+                published_at: article.published_at || article.published || null,
+                fetched_at: article.fetched_at || new Date().toISOString()
+              }))
+              
+              jianshuData = {
+                user_id: result.data.user?.id || '',
+                total_articles: articles.length,
+                fetched_at: new Date().toISOString(),
+                articles: articles
+              }
+            } else {
+              console.error('[时间流] 简书数据获取失败:', result?.error)
+            }
+          } catch (err) {
+            console.error('[时间流] 简书数据解析失败:', err)
+          }
+        } else {
+          console.error('[时间流] 简书API请求失败:', jianshuRes.status === 'rejected' ? jianshuRes.reason : '请求失败')
+        }
+
+        // 处理YouTube数据
+        if (youtubeRes.status === 'fulfilled' && youtubeRes.value.ok) {
+          try {
+            const result = await youtubeRes.value.json()
+            if (result.success && result.data) {
+              youtubeData = {
+                channel_handle: result.data.channel?.handle || '',
+                channel_name: result.data.channel?.name || '',
+                total_videos: result.data.total || 0,
+                fetched_at: new Date().toISOString(),
+                videos: result.data.videos || []
+              }
+            } else {
+              console.error('[时间流] YouTube数据获取失败:', result?.error)
+            }
+          } catch (err) {
+            console.error('[时间流] YouTube数据解析失败:', err)
+          }
+        } else {
+          console.error('[时间流] YouTube API请求失败:', youtubeRes.status === 'rejected' ? youtubeRes.reason : '请求失败')
+        }
+
+        // 合并并排序数据
+        const items = await mergeAndSortData(
+          doubanRSSData,
+          bilibiliData,
+          jianshuData,
+          youtubeData
+        )
+
+        setTimelineItems(items)
+      } catch (err: any) {
+        console.error('[时间流] 数据获取失败:', err)
+        setError(err.message || '数据加载失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   // 按日期分组
   const groupedByDate = timelineItems.reduce((acc, item) => {
@@ -552,11 +333,9 @@ export default async function TimelinePage() {
   })
 
   // 按日期排序（最新的日期在前）
-  // 使用每个日期组中第一个条目的时间进行排序（因为已经排序，第一个就是最新的）
   const sortedDateKeys = Object.keys(groupedByDate).sort((a, b) => {
     const itemsA = groupedByDate[a]
     const itemsB = groupedByDate[b]
-    // 取每个日期组中第一个条目的时间（因为已经排序，第一个就是最新的）
     const dateA = itemsA && itemsA.length > 0 ? new Date(itemsA[0].publishedAt).getTime() : 0
     const dateB = itemsB && itemsB.length > 0 ? new Date(itemsB[0].publishedAt).getTime() : 0
     return dateB - dateA
@@ -576,29 +355,51 @@ export default async function TimelinePage() {
             <p className="text-xl md:text-2xl mb-6 opacity-90">
               所有平台的最新动态，按时间顺序展示
             </p>
-            <div className="flex justify-center space-x-4 flex-wrap gap-4">
+            {loading ? (
               <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <span className="text-sm">共 {timelineItems.length} 条动态</span>
+                <span className="text-sm">加载中...</span>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <span className="text-sm">📚 {timelineItems.filter(i => i.platform === 'douban-rss').length} 豆瓣RSS</span>
+            ) : error ? (
+              <div className="bg-red-500/20 backdrop-blur-sm rounded-full px-4 py-2">
+                <span className="text-sm">加载失败: {error}</span>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <span className="text-sm">📝 {timelineItems.filter(i => i.platform === 'jianshu').length} 简书</span>
+            ) : (
+              <div className="flex justify-center space-x-4 flex-wrap gap-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <span className="text-sm">共 {timelineItems.length} 条动态</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <span className="text-sm">📚 {timelineItems.filter(i => i.platform === 'douban-rss').length} 豆瓣RSS</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <span className="text-sm">📝 {timelineItems.filter(i => i.platform === 'jianshu').length} 简书</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <span className="text-sm">📱 {timelineItems.filter(i => i.platform === 'bilibili').length} B站</span>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <span className="text-sm">📺 {timelineItems.filter(i => i.platform === 'youtube').length} YouTube</span>
+                </div>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <span className="text-sm">📱 {timelineItems.filter(i => i.platform === 'bilibili').length} B站</span>
-              </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                <span className="text-sm">📺 {timelineItems.filter(i => i.platform === 'youtube').length} YouTube</span>
-              </div>
-            </div>
+            )}
           </div>
         </section>
 
         {/* Timeline Section */}
         <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {timelineItems.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="text-gray-400 text-6xl mb-4">⏳</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">加载中...</h3>
+              <p className="text-gray-600">正在获取数据</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <div className="text-red-400 text-6xl mb-4">❌</div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">加载失败</h3>
+              <p className="text-gray-600">{error}</p>
+            </div>
+          ) : timelineItems.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-gray-400 text-6xl mb-4">📭</div>
               <h3 className="text-xl font-semibold text-gray-800 mb-2">暂无数据</h3>
@@ -744,4 +545,3 @@ export default async function TimelinePage() {
     </div>
   )
 }
-
