@@ -27,6 +27,7 @@ export async function GET(request: Request) {
   try {
     // 确保表已初始化
     await initTables()
+    console.log('[Cron 豆瓣] 开始抓取数据，URL:', rssUrl)
     
     const response = await fetch(rssUrl, {
       headers: {
@@ -37,27 +38,38 @@ export async function GET(request: Request) {
       next: { revalidate: 0 } // 不缓存
     })
 
+    console.log('[Cron 豆瓣] HTTP 响应状态:', response.status, response.statusText)
+    console.log('[Cron 豆瓣] Content-Type:', response.headers.get('content-type'))
+
     if (response.ok) {
       const xmlText = await response.text()
+      console.log('[Cron 豆瓣] RSS 内容长度:', xmlText.length)
+      console.log('[Cron 豆瓣] RSS 内容前200字符:', xmlText.substring(0, 200))
       
       // 检查返回的是否是 HTML（错误页面）
       if (xmlText.trim().toLowerCase().startsWith('<!doctype') || xmlText.trim().toLowerCase().startsWith('<html')) {
+        console.error('[Cron 豆瓣] 返回了 HTML 页面，内容:', xmlText.substring(0, 500))
         throw new Error('RSS feed 返回了 HTML 页面而不是 XML')
       }
       
       let parsed
       try {
         parsed = await parseStringPromise(xmlText)
+        console.log('[Cron 豆瓣] XML 解析成功')
       } catch (parseError: any) {
+        console.error('[Cron 豆瓣] XML 解析失败:', parseError.message)
+        console.error('[Cron 豆瓣] XML 内容片段:', xmlText.substring(0, 1000))
         throw new Error(`XML 解析失败: ${parseError.message}`)
       }
       
       const channel = parsed.rss?.channel?.[0]
       if (!channel) {
+        console.error('[Cron 豆瓣] 解析后的数据结构:', JSON.stringify(parsed, null, 2).substring(0, 500))
         throw new Error('Invalid RSS format: 缺少 channel 元素')
       }
 
       const items = channel.item || []
+      console.log('[Cron 豆瓣] 找到', items.length, '个条目')
       const interests = items
         .map((item: any) => {
           const title = item.title?.[0] || ''
@@ -97,14 +109,18 @@ export async function GET(request: Request) {
 
       // 保存到数据库
       try {
+        console.log('[Cron 豆瓣] 准备保存', interests.length, '条数据到数据库')
+        console.log('[Cron 豆瓣] 示例数据:', JSON.stringify(interests[0] || {}, null, 2))
         await saveDoubanInterestsToDB(interests)
         console.log('[Cron 豆瓣] 数据已保存到数据库，共', interests.length, '条')
       } catch (dbError: any) {
         console.error('[Cron 豆瓣] 保存到数据库失败:', dbError)
+        console.error('[Cron 豆瓣] 错误堆栈:', dbError.stack)
         return NextResponse.json({ 
           success: false, 
           error: '保存到数据库失败',
-          details: dbError.message 
+          details: dbError.message,
+          stack: process.env.NODE_ENV === 'development' ? dbError.stack : undefined
         }, { status: 500 })
       }
 
@@ -123,15 +139,22 @@ export async function GET(request: Request) {
       })
     }
 
+    console.error('[Cron 豆瓣] HTTP 请求失败，状态码:', response.status)
+    const errorText = await response.text().catch(() => '无法读取错误内容')
+    console.error('[Cron 豆瓣] 错误响应内容:', errorText.substring(0, 500))
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to fetch 豆瓣 RSS data' 
-    }, { status: 500 })
+      error: `Failed to fetch 豆瓣 RSS data: HTTP ${response.status}`,
+      details: errorText.substring(0, 200)
+    }, { status: response.status })
   } catch (error: any) {
     console.error('[Cron 豆瓣] 数据抓取失败:', error)
+    console.error('[Cron 豆瓣] 错误堆栈:', error.stack)
     return NextResponse.json({ 
       success: false, 
-      error: error.message 
+      error: error.message || '未知错误',
+      details: error.stack || error.toString(),
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 })
   }
 }

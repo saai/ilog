@@ -241,12 +241,58 @@ export async function getDoubanInterestsFromDB(limit: number = 30): Promise<any[
   })
 }
 
+// 解析 RFC 822 格式的日期字符串（如 "Fri, 19 Sep 2025 22:26:16 GMT"）
+function parseRFC822Date(dateString: string | Date): Date {
+  // 如果已经是 Date 对象，直接返回
+  if (dateString instanceof Date) {
+    return dateString
+  }
+  
+  // 如果是字符串，尝试解析
+  if (typeof dateString === 'string') {
+    // 优先手动解析 RFC 822/GMT 格式
+    const gmtMatch = dateString.match(/^(\w+),\s+(\d{1,2})\s+(\w+)\s+(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s+(GMT|UTC)$/i)
+    if (gmtMatch) {
+      const months: Record<string, number> = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+      }
+      
+      const day = parseInt(gmtMatch[2], 10)
+      const monthName = gmtMatch[3]
+      const month = months[monthName.charAt(0).toUpperCase() + monthName.slice(1).toLowerCase()] ?? 0
+      const year = parseInt(gmtMatch[4], 10)
+      const hour = parseInt(gmtMatch[5], 10)
+      const minute = parseInt(gmtMatch[6], 10)
+      const second = parseInt(gmtMatch[7], 10)
+      
+      const date = new Date(Date.UTC(year, month, day, hour, minute, second))
+      if (!isNaN(date.getTime())) {
+        return date
+      }
+    }
+    
+    // 尝试使用 Date 构造函数解析（支持 ISO 和其他格式）
+    const date = new Date(dateString)
+    if (!isNaN(date.getTime())) {
+      return date
+    }
+  }
+  
+  // 如果所有解析都失败，返回当前时间
+  console.warn('[数据库] 无法解析日期字符串，使用当前时间:', dateString)
+  return new Date()
+}
+
 // 保存豆瓣兴趣数据到数据库
 export async function saveDoubanInterestsToDB(interests: any[]): Promise<void> {
   if (interests.length === 0) return
   
   for (const interest of interests) {
-    const publishedAt = interest.published_at || interest.published || interest.created_at || new Date()
+    // 解析日期字符串为 Date 对象
+    const dateString = interest.published_at || interest.published || interest.created_at
+    const publishedAt = dateString ? parseRFC822Date(dateString) : new Date()
+    
     const dataJson = JSON.stringify(interest)
     
     // 检查是否已存在（根据 url）
