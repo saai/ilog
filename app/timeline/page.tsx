@@ -121,7 +121,7 @@ async function getDoubanRSSData() {
         return { success: false, error: '构建时无法获取数据' }
       }
     }
-    const apiUrl = `${baseUrl}/api/douban-rss`
+    const apiUrl = `${baseUrl}/api/data/douban`
     const response = await fetch(apiUrl, {
       cache: 'no-store',
       // 添加超时和错误处理
@@ -186,7 +186,7 @@ async function getBilibiliData() {
         return { success: false, error: '构建时无法获取数据' }
       }
     }
-    const apiUrl = `${baseUrl}/api/bilibili-videos`
+    const apiUrl = `${baseUrl}/api/data/bilibili`
     const response = await fetch(apiUrl, {
       cache: 'no-store',
       // 添加超时和错误处理
@@ -256,7 +256,7 @@ async function getJianshuData() {
         return { success: false, error: '构建时无法获取数据' }
       }
     }
-    const apiUrl = `${baseUrl}/api/jianshu-articles`
+    const apiUrl = `${baseUrl}/api/data/jianshu`
     const response = await fetch(apiUrl, {
       cache: 'no-store',
       // 添加超时和错误处理
@@ -326,7 +326,7 @@ async function getYouTubeData() {
         return { success: false, error: '构建时无法获取数据' }
       }
     }
-    const apiUrl = `${baseUrl}/api/youtube-videos`
+    const apiUrl = `${baseUrl}/api/data/youtube`
     const response = await fetch(apiUrl, {
       cache: 'no-store',
       // 添加超时和错误处理

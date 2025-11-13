@@ -71,7 +71,7 @@ async function getBilibiliVideos() {
         return null
       }
     }
-    const apiUrl = `${baseUrl}/api/bilibili-videos`
+    const apiUrl = `${baseUrl}/api/data/bilibili`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store', // 不缓存，始终获取最新数据
@@ -129,7 +129,7 @@ async function getJianshuArticles() {
         return null
       }
     }
-    const apiUrl = `${baseUrl}/api/jianshu-articles`
+    const apiUrl = `${baseUrl}/api/data/jianshu`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store', // 不缓存，始终获取最新数据
@@ -187,7 +187,7 @@ async function getYouTubeVideos() {
         return null
       }
     }
-    const apiUrl = `${baseUrl}/api/youtube-videos`
+    const apiUrl = `${baseUrl}/api/data/youtube`
     
     const response = await fetch(apiUrl, {
       cache: 'no-store', // 不缓存，始终获取最新数据
