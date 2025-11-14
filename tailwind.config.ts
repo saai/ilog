@@ -87,7 +87,7 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        'xl': '20px',
+        xl: '20px',
         '2xl': '24px',
       },
       fontFamily: {
@@ -127,10 +127,6 @@ const config: Config = {
         'artistic-hover': '0 20px 40px rgba(0, 0, 0, 0.15)',
         'artistic-button': '0 4px 15px rgba(230, 57, 255, 0.3)',
         'artistic-button-hover': '0 8px 25px rgba(230, 57, 255, 0.4)',
-      },
-      borderRadius: {
-        'xl': '20px',
-        '2xl': '24px',
       },
     },
   },
