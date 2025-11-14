@@ -4,42 +4,66 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
-:root {
-  /* 艺术性明快主题色 */
-  --primary-50: #fef7ff;
-  --primary-100: #fdeeff;
-  --primary-200: #fbd5ff;
-  --primary-300: #f7a8ff;
-  --primary-400: #f171ff;
-  --primary-500: #e639ff;
-  --primary-600: #d61aff;
-  --primary-700: #b800e6;
-  --primary-800: #9a00c4;
-  --primary-900: #7d00a3;
-  
-  /* 辅助色 */
-  --accent-50: #fff7ed;
-  --accent-100: #ffedd5;
-  --accent-200: #fed7aa;
-  --accent-300: #fdba74;
-  --accent-400: #fb923c;
-  --accent-500: #f97316;
-  --accent-600: #ea580c;
-  --accent-700: #c2410c;
-  --accent-800: #9a3412;
-  --accent-900: #7c2d12;
-  
-  /* 中性色 */
-  --neutral-50: #fafafa;
-  --neutral-100: #f5f5f5;
-  --neutral-200: #e5e5e5;
-  --neutral-300: #d4d4d4;
-  --neutral-400: #a3a3a3;
-  --neutral-500: #737373;
-  --neutral-600: #525252;
-  --neutral-700: #404040;
-  --neutral-800: #262626;
-  --neutral-900: #171717;
+@layer base {
+  :root {
+    /* Shadcn UI CSS Variables */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 292 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 292 100% 60%;
+    --radius: 0.5rem;
+    
+    /* 艺术性明快主题色 */
+    --primary-50: #fef7ff;
+    --primary-100: #fdeeff;
+    --primary-200: #fbd5ff;
+    --primary-300: #f7a8ff;
+    --primary-400: #f171ff;
+    --primary-500: #e639ff;
+    --primary-600: #d61aff;
+    --primary-700: #b800e6;
+    --primary-800: #9a00c4;
+    --primary-900: #7d00a3;
+    
+    /* 辅助色 */
+    --accent-50: #fff7ed;
+    --accent-100: #ffedd5;
+    --accent-200: #fed7aa;
+    --accent-300: #fdba74;
+    --accent-400: #fb923c;
+    --accent-500: #f97316;
+    --accent-600: #ea580c;
+    --accent-700: #c2410c;
+    --accent-800: #9a3412;
+    --accent-900: #7c2d12;
+    
+    /* 中性色 */
+    --neutral-50: #fafafa;
+    --neutral-100: #f5f5f5;
+    --neutral-200: #e5e5e5;
+    --neutral-300: #d4d4d4;
+    --neutral-400: #a3a3a3;
+    --neutral-500: #737373;
+    --neutral-600: #525252;
+    --neutral-700: #404040;
+    --neutral-800: #262626;
+    --neutral-900: #171717;
+  }
 }
 
 * {
@@ -201,12 +225,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer base {
-  html {
-    font-family: 'Inter', system-ui, sans-serif;
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  body {
-    @apply bg-gray-50 text-gray-900;
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
   }
 }
 

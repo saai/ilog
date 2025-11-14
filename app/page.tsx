@@ -6,6 +6,10 @@ import Footer from '@/components/Footer'
 import ThumbnailImage from '@/components/ThumbnailImage'
 import { transformBilibili, transformJianshu, transformYouTube } from './timeline/transformers'
 import { TimelineItem } from './timeline/types'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ArrowRight } from 'lucide-react'
 
 // 平台配置
 const platforms = [
@@ -233,7 +237,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-artistic-gradient-light">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50/50 via-background to-accent-50/50">
       {/* 装饰元素 */}
       <div className="artistic-decoration top-20 left-10"></div>
       <div className="artistic-decoration bottom-20 right-10"></div>
@@ -242,102 +246,104 @@ export default function HomePage() {
       
       <main>
         {/* Latest Updates Hero Section */}
-        <section className="artistic-gradient text-white py-20 relative overflow-hidden">
+        <section className="bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500 text-white py-20 relative overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">最新动态</h1>
+              <p className="text-white/90 text-lg">Latest Updates</p>
+            </div>
+            
             {/* Latest Updates Grid - 显示每个平台的最新一条内容（YouTube、Bilibili、简书） */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? (
                 // 加载中状态
                 <>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">加载中...</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">加载中...</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">加载中...</p>
-                  </div>
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-white/10 backdrop-blur-sm border-white/20">
+                      <CardContent className="p-6">
+                        <p className="text-white/90 mb-4 leading-relaxed">加载中...</p>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </>
               ) : error ? (
                 // 错误状态
-                <div className="col-span-3 bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <p className="text-white/90 mb-4 leading-relaxed">加载失败: {error}</p>
-                </div>
+                <Card className="col-span-3 bg-white/10 backdrop-blur-sm border-white/20">
+                  <CardContent className="p-6">
+                    <p className="text-white/90 mb-4 leading-relaxed">加载失败: {error}</p>
+                  </CardContent>
+                </Card>
               ) : latestItems.length > 0 ? (
                 latestItems.map((item) => {
                   // 根据平台类型确定链接文本和图标颜色
-                  const linkText = item.platform === 'jianshu' ? '阅读文章 →' : 
-                                   item.platform === 'bilibili' || item.platform === 'youtube' ? '观看视频 →' : 
-                                   '查看详情 →'
+                  const linkText = item.platform === 'jianshu' ? '阅读文章' : 
+                                   item.platform === 'bilibili' || item.platform === 'youtube' ? '观看视频' : 
+                                   '查看详情'
                   
-                  const iconBgColor = item.platform === 'youtube' ? 'bg-red-100/20' :
-                                     item.platform === 'bilibili' ? 'bg-pink-100/20' :
-                                     item.platform === 'jianshu' ? 'bg-green-100/20' :
-                                     'bg-yellow-100/20'
+                  const badgeVariant = item.platform === 'youtube' ? 'destructive' :
+                                     item.platform === 'bilibili' ? 'secondary' :
+                                     'default'
                   
                   return (
-                    <div key={item.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                      <div className="flex items-center mb-4">
-                        <div className={`w-12 h-12 ${iconBgColor} rounded-xl flex items-center justify-center text-2xl mr-4`}>
-                          {item.platformIcon}
+                    <Card key={item.id} className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                      <CardContent className="p-6">
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl mr-4">
+                            {item.platformIcon}
+                          </div>
+                          <div>
+                            <Badge variant={badgeVariant} className="mb-1">{item.platformName}</Badge>
+                            <p className="text-xs text-white/80">最新内容</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="font-display font-semibold text-white text-lg">{item.platformName}</h3>
-                          <p className="text-sm text-white/80">最新内容</p>
+                        
+                        {/* 缩略图 */}
+                        <ThumbnailImage 
+                          src={item.thumbnail || ''} 
+                          alt={item.title}
+                        />
+                        
+                        <p className="text-white/90 mb-4 leading-relaxed line-clamp-2 min-h-[3rem]">
+                          {item.title}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70 text-xs">{item.formattedDate}</span>
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center gap-1"
+                          >
+                            {linkText}
+                            <ArrowRight className="h-4 w-4" />
+                          </a>
                         </div>
-                      </div>
-                      
-                      {/* 缩略图 */}
-                      <ThumbnailImage 
-                        src={item.thumbnail || ''} 
-                        alt={item.title}
-                      />
-                      
-                      <p className="text-white/90 mb-4 leading-relaxed line-clamp-2">
-                        {item.title}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/70 text-sm">{item.formattedDate}</span>
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-white hover:text-primary-200 text-sm font-medium transition-colors flex items-center"
-                        >
-                          {linkText}
-                        </a>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   )
                 })
               ) : (
                 // 如果没有数据，显示占位符
                 <>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
-                  </div>
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-white/10 backdrop-blur-sm border-white/20">
+                      <CardContent className="p-6">
+                        <p className="text-white/90 mb-4 leading-relaxed">暂无数据</p>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </>
               )}
             </div>
 
             {/* View All Updates Button */}
             <div className="text-center mt-12">
-              <a
-                href="/timeline"
-                className="inline-flex items-center bg-white/20 backdrop-blur-sm border border-white/30 text-white px-8 py-3 rounded-full font-medium hover:bg-white/30 transition-all duration-300"
-              >
-                查看时间流
-                <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </a>
+              <Button asChild size="lg" variant="secondary" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+                <a href="/timeline" className="flex items-center gap-2">
+                  查看时间流
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
             </div>
           </div>
         </section>
@@ -345,17 +351,17 @@ export default function HomePage() {
         {/* Platform Navigation */}
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-display font-bold text-neutral-800 mb-4">
+            <div className="text-center mb-12 space-y-4">
+              <h2 className="text-4xl font-display font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
                 我的平台主页
               </h2>
-              <p className="text-lg text-neutral-600">
+              <p className="text-lg text-muted-foreground">
                 点击下方图标直接跳转到我在各平台的个人主页
               </p>
             </div>
 
             {/* Platform Grid - 3 columns layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {platforms.map((platform, index) => (
                 <a
                   key={index}
@@ -364,22 +370,25 @@ export default function HomePage() {
                   rel="noopener noreferrer"
                   className="group"
                 >
-                  <div className="artistic-card p-8 text-center hover:scale-105 transition-all duration-300 h-full">
-                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl text-3xl mb-6 ${platform.color} transition-all duration-300 group-hover:scale-110`}>
-                      {platform.icon}
-                    </div>
-                    <h3 className="text-xl font-display font-semibold text-neutral-800 mb-3 group-hover:text-primary-500 transition-colors">
-                      {platform.name}
-                    </h3>
-                    <p className="text-sm text-neutral-600 mb-4">
-                      {platform.description}
-                    </p>
-                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <span className="text-primary-500 text-sm font-medium">
-                        点击访问 →
-                      </span>
-                    </div>
-                  </div>
+                  <Card className="h-full hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-primary/50">
+                    <CardContent className="p-8 text-center">
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl text-3xl mb-6 ${platform.color} transition-all duration-300 group-hover:scale-110`}>
+                        {platform.icon}
+                      </div>
+                      <h3 className="text-xl font-display font-semibold text-foreground mb-3 group-hover:text-primary transition-colors">
+                        {platform.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {platform.description}
+                      </p>
+                      <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <span className="text-primary text-sm font-medium flex items-center justify-center gap-1">
+                          点击访问
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </a>
               ))}
             </div>

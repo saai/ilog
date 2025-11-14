@@ -29,7 +29,7 @@ export default function Header() {
   }
 
   return (
-    <header className="artistic-nav sticky top-0 z-50">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -39,27 +39,37 @@ export default function Header() {
               className="group flex items-center space-x-2"
             >
               <div className="relative">
-                <div className="text-4xl font-display font-black bg-gradient-to-r from-primary-600 via-accent-500 to-primary-400 bg-clip-text text-transparent group-hover:scale-110 transition-all duration-500 group-hover:drop-shadow-lg">
+                <div className="text-3xl font-display font-black bg-gradient-to-r from-primary-600 via-accent-500 to-primary-400 bg-clip-text text-transparent group-hover:scale-105 transition-all duration-300">
                   Saai's ilog
                 </div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-primary-500/30 via-accent-400/30 to-primary-300/30 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 scale-95 group-hover:scale-100"></div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary-400/20 to-accent-300/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link href={currentLang === 'en' ? '/en' : '/'} className="text-neutral-700 hover:text-primary-500 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-primary-50">
+          <nav className="hidden md:flex items-center space-x-2">
+            <Link 
+              href={currentLang === 'en' ? '/en' : '/'} 
+              className="text-foreground/70 hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent"
+            >
               {navText[currentLang].home}
             </Link>
-            <Link href="/timeline" className="text-neutral-700 hover:text-primary-500 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-primary-50">
+            <Link 
+              href={currentLang === 'en' ? '/en/timeline' : '/timeline'} 
+              className="text-foreground/70 hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent"
+            >
               {navText[currentLang].timeline}
             </Link>
-            <Link href={currentLang === 'en' ? '/en/about' : '/about'} className="text-neutral-700 hover:text-primary-500 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-primary-50">
+            <Link 
+              href={currentLang === 'en' ? '/en/about' : '/about'} 
+              className="text-foreground/70 hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent"
+            >
               {navText[currentLang].about}
             </Link>
-            <Link href={currentLang === 'en' ? '/en/contact' : '/contact'} className="text-neutral-700 hover:text-primary-500 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:bg-primary-50">
+            <Link 
+              href={currentLang === 'en' ? '/en/contact' : '/contact'} 
+              className="text-foreground/70 hover:text-foreground px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-accent"
+            >
               {navText[currentLang].contact}
             </Link>
             <LanguageSwitcher />
@@ -70,7 +80,8 @@ export default function Header() {
             <LanguageSwitcher />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-neutral-700 hover:text-primary-500 focus:outline-none focus:text-primary-500 p-2 rounded-xl hover:bg-primary-50 transition-all duration-300"
+              className="text-foreground hover:text-primary p-2 rounded-md hover:bg-accent transition-colors"
+              aria-label="Toggle menu"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
@@ -85,18 +96,30 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white/80 backdrop-blur-md border-t border-primary-100 rounded-b-2xl">
-              <Link href={currentLang === 'en' ? '/en' : '/'} className="text-neutral-700 hover:text-primary-500 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-300 hover:bg-primary-50">
+          <div className="md:hidden border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 bg-background">
+              <Link 
+                href={currentLang === 'en' ? '/en' : '/'} 
+                className="text-foreground/70 hover:text-foreground block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent"
+              >
                 {navText[currentLang].home}
               </Link>
-              <Link href="/timeline" className="text-neutral-700 hover:text-primary-500 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-300 hover:bg-primary-50">
+              <Link 
+                href={currentLang === 'en' ? '/en/timeline' : '/timeline'} 
+                className="text-foreground/70 hover:text-foreground block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent"
+              >
                 {navText[currentLang].timeline}
               </Link>
-              <Link href={currentLang === 'en' ? '/en/about' : '/about'} className="text-neutral-700 hover:text-primary-500 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-300 hover:bg-primary-50">
+              <Link 
+                href={currentLang === 'en' ? '/en/about' : '/about'} 
+                className="text-foreground/70 hover:text-foreground block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent"
+              >
                 {navText[currentLang].about}
               </Link>
-              <Link href={currentLang === 'en' ? '/en/contact' : '/contact'} className="text-neutral-700 hover:text-primary-500 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-300 hover:bg-primary-50">
+              <Link 
+                href={currentLang === 'en' ? '/en/contact' : '/contact'} 
+                className="text-foreground/70 hover:text-foreground block px-3 py-2 rounded-md text-base font-medium transition-colors hover:bg-accent"
+              >
                 {navText[currentLang].contact}
               </Link>
             </div>
