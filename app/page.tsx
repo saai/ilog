@@ -250,7 +250,6 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">最新动态</h1>
-              <p className="text-white/90 text-lg">Latest Updates</p>
             </div>
             
             {/* Latest Updates Grid - 显示每个平台的最新一条内容（YouTube、Bilibili、简书） */}
